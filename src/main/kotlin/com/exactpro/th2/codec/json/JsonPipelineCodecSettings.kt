@@ -20,7 +20,7 @@ import com.exactpro.sf.services.json.JsonSettings
 import com.exactpro.th2.codec.api.IPipelineCodecSettings
 
 class JsonPipelineCodecSettings : IPipelineCodecSettings {
-    val rejectUnexpectedFields = false
+    val rejectUnexpectedFields = true
     val treatSimpleValuesAsStrings = false
 
     fun toJsonSettings(): JsonSettings = JsonSettings().apply {
