@@ -1,5 +1,5 @@
 variables:
-  APP_NAME: th2-codec-json-over-http
+  APP_NAME: th2-codec-json
 
 include:
   - project: vivarium/th2/pipelines
