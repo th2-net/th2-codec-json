@@ -185,6 +185,10 @@ class JsonPipelineCodec : IPipelineCodec {
                 metaData.rawMessage = rawMessage.body.toByteArray()
             })
 
+            if (decodedMessage.metaData.isRejected) {
+                error("Message was rejected due to: ${decodedMessage.metaData.rejectReason}")
+            }
+
             builder += IMESSAGE_CONVERTER.toProtoMessage(decodedMessage).apply {
                 metadataBuilder.apply {
                     putAllProperties(metadataProperties)
