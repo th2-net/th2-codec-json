@@ -1,10 +1,7 @@
 variables:
   APP_NAME: th2-codec-json-over-http
-  MAJOR_VERSION: 0
-  MINOR_VERSION: 0
-  MAINTENANCE_VERSION: 3
 
 include:
   - project: vivarium/th2/pipelines
-    ref: master
+    ref: v2
     file: /.gitlab-ci-java.yml
