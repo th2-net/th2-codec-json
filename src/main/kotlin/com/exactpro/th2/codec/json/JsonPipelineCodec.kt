@@ -22,6 +22,9 @@ import com.exactpro.sf.common.messages.structures.IDictionaryStructure
 import com.exactpro.sf.configuration.factory.JSONMessageFactory
 import com.exactpro.sf.configuration.suri.SailfishURI
 import com.exactpro.sf.extensions.get
+import com.exactpro.sf.extensions.messageType
+import com.exactpro.sf.extensions.requireMessageType
+import com.exactpro.sf.extensions.set
 import com.exactpro.sf.services.http.HTTPClientSettings
 import com.exactpro.sf.services.http.HTTPMessageHelper.REQUEST_METHOD_ATTRIBUTE
 import com.exactpro.sf.services.http.HTTPMessageHelper.REQUEST_RESPONSE_ATTRIBUTE
@@ -31,6 +34,8 @@ import com.exactpro.sf.services.json.JSONEncoder
 import com.exactpro.th2.codec.MessageFactoryProxy
 import com.exactpro.th2.codec.api.IPipelineCodec
 import com.exactpro.th2.codec.api.IPipelineCodecSettings
+import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.BY_HTTP_METHOD_AND_URI
+import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.BY_INNER_FIELD
 import com.exactpro.th2.codec.util.toDebugString
 import com.exactpro.th2.common.grpc.AnyMessage
 import com.exactpro.th2.common.grpc.Direction.FIRST
@@ -40,9 +45,11 @@ import com.exactpro.th2.common.grpc.RawMessage
 import com.exactpro.th2.common.message.plusAssign
 import com.exactpro.th2.sailfish.utils.IMessageToProtoConverter
 import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.protobuf.ByteString
 import io.netty.channel.embedded.EmbeddedChannel
 
+typealias MessageName = String
 typealias MessageType = String
 
 class JsonPipelineCodec : IPipelineCodec {
@@ -54,8 +61,9 @@ class JsonPipelineCodec : IPipelineCodec {
     private lateinit var protoConverter: ProtoToIMessageConverter
     private lateinit var encodeChannel: EmbeddedChannel
     private lateinit var decodeChannel: EmbeddedChannel
-    private lateinit var requestInfos: Map<MessageType, MessageInfo>
-    private lateinit var responseInfos: Map<MessageType, MessageInfo>
+    private lateinit var requestInfos: Map<MessageName, MessageInfo>
+    private lateinit var responseInfos: Map<MessageName, MessageInfo>
+    private lateinit var messageNames: Map<MessageType, MessageName>
 
     override fun init(dictionary: IDictionaryStructure, settings: IPipelineCodecSettings?) {
         check(!this::dictionary.isInitialized) { "Codec is already initialized" }
@@ -82,28 +90,43 @@ class JsonPipelineCodec : IPipelineCodec {
             EmbeddedChannel(this)
         }
 
-        val requestInfos = hashMapOf<MessageType, MessageInfo>()
-        val responseInfos = hashMapOf<MessageType, MessageInfo>()
+        val requestInfos = hashMapOf<MessageName, MessageInfo>()
+        val responseInfos = hashMapOf<MessageName, MessageInfo>()
+        val messageNames = hashMapOf<MessageName, MessageType>()
 
-        dictionary.messages.values.asSequence()
-            .filter { it.attributes.keys.containsAll(VALID_MESSAGE_ATTRIBUTES) }
-            .forEach { message ->
-                val responseType = message.attributes[REQUEST_RESPONSE_ATTRIBUTE]!!.value
-                val method = message.attributes[REQUEST_METHOD_ATTRIBUTE]!!.value
-                val uri = message.attributes[REQUEST_URI_ATTRIBUTE]!!.value.run {
-                    runCatching(::UriPattern).getOrElse(fail("Failed to create URI pattern from: $this"))
-                }
+        when (this.settings.messageTypeDetection) {
+            BY_HTTP_METHOD_AND_URI -> {
+                dictionary.messages.values.asSequence()
+                    .filter { it.attributes.keys.containsAll(VALID_MESSAGE_ATTRIBUTES) }
+                    .forEach { message ->
+                        val responseType = message.attributes[REQUEST_RESPONSE_ATTRIBUTE]!!.value
+                        val method = message.attributes[REQUEST_METHOD_ATTRIBUTE]!!.value
+                        val uri = message.attributes[REQUEST_URI_ATTRIBUTE]!!.value.run {
+                            runCatching(::UriPattern).getOrElse(fail("Failed to create URI pattern from: $this"))
+                        }
 
-                check(responseType in dictionary.messages) { "Unknown response type: $responseType" }
+                        check(responseType in dictionary.messages) { "Unknown response type: $responseType" }
 
-                MessageInfo(method, uri).apply {
-                    requestInfos[message.name] = this
-                    responseInfos[responseType] = this
+                        MessageInfo(method, uri).apply {
+                            requestInfos[message.name] = this
+                            responseInfos[responseType] = this
+                        }
+                    }
+            }
+            BY_INNER_FIELD -> {
+                dictionary.messages.forEach { (name, message) ->
+                    message.messageType?.let { type ->
+                        if (this.settings.messageTypeField in message.fields) {
+                            messageNames[type] = name
+                        }
+                    }
                 }
             }
+        }
 
         this.requestInfos = requestInfos
         this.responseInfos = responseInfos
+        this.messageNames = messageNames
     }
 
     override fun encode(messageGroup: MessageGroup): MessageGroup {
@@ -124,18 +147,33 @@ class JsonPipelineCodec : IPipelineCodec {
             val parsedMessage = message.message
             val metadata = parsedMessage.metadata
             val messageType = metadata.messageType
+            val messageStructure = checkNotNull(dictionary.messages[messageType]) { "Unknown message type: $messageType" }
 
-            checkNotNull(dictionary.messages[messageType]) { "Unknown message type: $messageType" }
-            check(messageType in requestInfos || messageType in responseInfos) { "Message type is not a request or response: $messageType" }
+            if (settings.messageTypeDetection == BY_HTTP_METHOD_AND_URI) {
+                check(messageType in requestInfos || messageType in responseInfos) { "Message type is not a request or response: $messageType" }
+            }
 
             val sfMessage = protoConverter.fromProtoMessage(parsedMessage, true)
+
+            if (settings.messageTypeDetection == BY_INNER_FIELD) {
+                val messageTypeField = settings.messageTypeField
+                check(messageTypeField in messageStructure.fields) { "Message $messageType does not have the type field: $messageTypeField" }
+
+                if (!sfMessage.isFieldSet(messageTypeField)) {
+                    sfMessage[messageTypeField] = messageStructure.requireMessageType()
+                }
+            }
+
             val encodedMessage = encodeChannel.encode(sfMessage)
             val rawMessage = checkNotNull(encodedMessage.metaData.rawMessage) { "Encoded messages has no raw message in its metadata: $encodedMessage" }
 
-            val additionalMetadataProperties = requestInfos[messageType]?.run {
-                val paramMessage: IMessage? = sfMessage[REQUEST_URI_MESSAGE]
-                val paramValues: Map<String, Any?> = paramMessage?.run { fieldNames.associateWith(::get) } ?: mapOf()
-                mapOf(METHOD_METADATA_PROPERTY to method, URI_METADATA_PROPERTY to uri.resolve(paramValues))
+            val additionalMetadataProperties = when (this.settings.messageTypeDetection) {
+                BY_INNER_FIELD -> null
+                BY_HTTP_METHOD_AND_URI -> requestInfos[messageType]?.run {
+                    val paramMessage: IMessage? = sfMessage[REQUEST_URI_MESSAGE]
+                    val paramValues: Map<String, Any?> = paramMessage?.run { fieldNames.associateWith(::get) } ?: mapOf()
+                    mapOf(METHOD_METADATA_PROPERTY to method, URI_METADATA_PROPERTY to uri.resolve(paramValues))
+                }
             }
 
             builder += RawMessage.newBuilder().apply {
@@ -171,18 +209,28 @@ class JsonPipelineCodec : IPipelineCodec {
             val rawMessage = message.rawMessage
             val metadata = rawMessage.metadata
             val metadataProperties = metadata.propertiesMap
-            val method = requireNotNull(metadataProperties[METHOD_METADATA_PROPERTY]) { "Message has no '$METHOD_METADATA_PROPERTY' metadata property: ${rawMessage.toDebugString()}" }
-            val uri = requireNotNull(metadataProperties[URI_METADATA_PROPERTY]) { "Message has no '$URI_METADATA_PROPERTY' metadata property: ${rawMessage.toDebugString()}" }
+            val body = rawMessage.body.toByteArray()
             val messageId = metadata.id
 
-            val messageType = when (val direction = messageId.direction) {
-                FIRST -> responseInfos.entries.find { it.value.matches(method, uri) } ?: error("No response for request with '$method' method and URI matching: $uri")
-                SECOND -> requestInfos.entries.find { it.value.matches(method, uri) } ?: error("No request with '$method' method and URI matching: $uri")
-                else -> error("Unsupported message direction: $direction")
-            }.key
+            val messageName = when (settings.messageTypeDetection) {
+                BY_INNER_FIELD -> {
+                    val json = OBJECT_READER.readTree(body)
+                    json.path(settings.messageTypeField).takeIf { it.isTextual }?.run { messageNames[textValue()] } ?: error("No valid type field in: $json")
+                }
+                BY_HTTP_METHOD_AND_URI -> {
+                    val method = requireNotNull(metadataProperties[METHOD_METADATA_PROPERTY]) { "Message has no '$METHOD_METADATA_PROPERTY' metadata property: ${rawMessage.toDebugString()}" }
+                    val uri = requireNotNull(metadataProperties[URI_METADATA_PROPERTY]) { "Message has no '$URI_METADATA_PROPERTY' metadata property: ${rawMessage.toDebugString()}" }
 
-            val decodedMessage = decodeChannel.decode(messageFactory.createMessage(messageType).apply {
-                metaData.rawMessage = rawMessage.body.toByteArray()
+                    when (val direction = messageId.direction) {
+                        FIRST -> responseInfos.entries.find { it.value.matches(method, uri) } ?: error("No response for request with '$method' method and URI matching: $uri")
+                        SECOND -> requestInfos.entries.find { it.value.matches(method, uri) } ?: error("No request with '$method' method and URI matching: $uri")
+                        else -> error("Unsupported message direction: $direction")
+                    }.key
+                }
+            }
+
+            val decodedMessage = decodeChannel.decode(messageFactory.createMessage(messageName).apply {
+                metaData.rawMessage = body
             })
 
             if (decodedMessage.metaData.isRejected) {
@@ -222,6 +270,8 @@ class JsonPipelineCodec : IPipelineCodec {
         private val CODEC_SETTINGS = HTTPClientSettings()
         private val IMESSAGE_CONVERTER = IMessageToProtoConverter()
         private val VALID_MESSAGE_ATTRIBUTES = setOf(REQUEST_METHOD_ATTRIBUTE, REQUEST_URI_ATTRIBUTE, REQUEST_RESPONSE_ATTRIBUTE)
+
+        private val OBJECT_READER = jacksonObjectMapper().reader()
 
         private fun fail(message: String): (Throwable) -> Nothing = {
             throw IllegalStateException(message, it)
