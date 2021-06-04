@@ -105,6 +105,13 @@ spec:
 
 ## Changelog
 
+### v0.1.1
+
+#### Changed:
+
+* use newer version SF JSON codec which properly encodes decimals to strings.
+* use newer versions of th2 libraries
+
 ### v0.1.0
 
 #### Added:

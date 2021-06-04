@@ -10,7 +10,7 @@ apply plugin: 'com.palantir.docker'
 
 ext {
     sharedDir = file("${project.rootDir}/shared")
-    sailfishVersion = '3.2-SNAPSHOT'
+    sailfishVersion = '3.2.1594'
 }
 
 group = 'com.exactpro.th2'
@@ -28,18 +28,13 @@ repositories {
     mavenCentral()
 
     maven {
-        name 'TH2 Bintray'
-        url 'https://dl.bintray.com/exactpro/th2'
+        name 'Sonatype_snapshots'
+        url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
     }
 
     maven {
-        name 'Artifactory release'
-        url 'http://artifactory5.exp.exactpro.com/artifactory/libs-release'
-    }
-
-    maven {
-        name 'Artifactory snapshot'
-        url 'http://artifactory5.exp.exactpro.com/artifactory/libs-snapshot'
+        name 'Sonatype_releases'
+        url 'https://s01.oss.sonatype.org/content/repositories/releases/'
     }
 
     mavenLocal()
@@ -65,11 +60,11 @@ jar {
 }
 
 dependencies {
-    api platform('com.exactpro.th2:bom:2.10.1')
+    api platform('com.exactpro.th2:bom:3.0.0')
 
-    implementation 'com.exactpro.th2:common:3.5.2'
-    implementation 'com.exactpro.th2:codec:3.1.2'
-    implementation 'com.exactpro.th2:sailfish-utils:3.0.0'
+    implementation 'com.exactpro.th2:common:3.16.0'
+    implementation 'com.exactpro.th2:codec:3.2.0'
+    implementation 'com.exactpro.th2:sailfish-utils:3.3.4'
 
     implementation "com.exactpro.sf:sailfish-core:${sailfishVersion}"
     implementation "com.exactpro.sf:service-http:${sailfishVersion}"

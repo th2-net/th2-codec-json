@@ -1,3 +1,4 @@
 build/
 shared/
 .gradle/
+.idea/
