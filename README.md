@@ -1,4 +1,4 @@
-# JSON Codec v0.1.0
+# JSON Codec v0.1.2
 
 This microservice can encode and decode JSON messages received via HTTP or any other transport
 
@@ -44,8 +44,8 @@ kind: Th2Box
 metadata:
   name: codec-json
 spec:
-  image-name: nexus.exactpro.com:18000/th2-codec-json
-  image-version: 0.1.0
+  image-name: ghcr.io/th2-net/th2-codec-json
+  image-version: 0.1.2
   custom-config:
     codecSettings:
       messageTypeDetection: BY_INNER_FIELD
@@ -105,11 +105,17 @@ spec:
 
 ## Changelog
 
+### v0.1.2
+
+#### Changed:
+
+* use newer version of `com.exactpro.th2:sailfish-utils` dependency
+
 ### v0.1.1
 
 #### Changed:
 
-* use newer version SF JSON codec which properly encodes decimals to strings.
+* use newer version of SF JSON codec which properly encodes decimals to strings
 * use newer versions of th2 libraries
 
 ### v0.1.0
