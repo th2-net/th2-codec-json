@@ -178,6 +178,7 @@ class JsonPipelineCodec : IPipelineCodec {
 
             builder += RawMessage.newBuilder().apply {
                 body = ByteString.copyFrom(rawMessage)
+                parentEventIdBuilder.mergeFrom(parsedMessage.parentEventId)
                 metadataBuilder.apply {
                     putAllProperties(metadata.propertiesMap)
                     additionalMetadataProperties?.run(::putAllProperties)
@@ -238,6 +239,7 @@ class JsonPipelineCodec : IPipelineCodec {
             }
 
             builder += IMESSAGE_CONVERTER.toProtoMessage(decodedMessage).apply {
+                parentEventIdBuilder.mergeFrom(rawMessage.parentEventId)
                 metadataBuilder.apply {
                     putAllProperties(metadataProperties)
                     this.id = messageId
