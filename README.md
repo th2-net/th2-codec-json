@@ -1,4 +1,4 @@
-# JSON Codec v0.1.2
+# JSON Codec v0.1.3
 
 This microservice can encode and decode JSON messages received via HTTP or any other transport
 
@@ -104,6 +104,12 @@ spec:
 ```
 
 ## Changelog
+
+### v0.1.3
+
+#### Changed:
+
+* parent event id loss fixed
 
 ### v0.1.2
 
