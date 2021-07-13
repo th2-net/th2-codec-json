@@ -132,7 +132,7 @@ class JsonPipelineCodec : IPipelineCodec {
     override fun encode(messageGroup: MessageGroup): MessageGroup {
         val messages = messageGroup.messagesList
 
-        if (messages.isEmpty() || messages.none { it.message.metadata.protocol == PROTOCOL }) {
+        if (messages.isEmpty()) {
             return messageGroup
         }
 
