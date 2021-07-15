@@ -24,7 +24,6 @@ import com.exactpro.sf.configuration.suri.SailfishURI
 import com.exactpro.sf.extensions.get
 import com.exactpro.sf.extensions.messageType
 import com.exactpro.sf.extensions.requireMessageType
-import com.exactpro.sf.extensions.set
 import com.exactpro.sf.services.http.HTTPClientSettings
 import com.exactpro.sf.services.http.HTTPMessageHelper.REQUEST_METHOD_ATTRIBUTE
 import com.exactpro.sf.services.http.HTTPMessageHelper.REQUEST_RESPONSE_ATTRIBUTE
@@ -45,6 +44,8 @@ import com.exactpro.th2.common.grpc.RawMessage
 import com.exactpro.th2.common.message.plusAssign
 import com.exactpro.th2.sailfish.utils.IMessageToProtoConverter
 import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter
+import com.fasterxml.jackson.core.JsonPointer
+import com.fasterxml.jackson.core.JsonPointer.SEPARATOR
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.protobuf.ByteString
 import io.netty.channel.embedded.EmbeddedChannel
@@ -64,6 +65,8 @@ class JsonPipelineCodec : IPipelineCodec {
     private lateinit var requestInfos: Map<MessageName, MessageInfo>
     private lateinit var responseInfos: Map<MessageName, MessageInfo>
     private lateinit var messageNames: Map<MessageType, MessageName>
+    private lateinit var messagePathProvider: IMessagePathProvider
+    private var messageTypePointer: JsonPointer? = null
 
     override fun init(dictionary: IDictionaryStructure, settings: IPipelineCodecSettings?) {
         check(!this::dictionary.isInitialized) { "Codec is already initialized" }
@@ -121,8 +124,14 @@ class JsonPipelineCodec : IPipelineCodec {
                         }
                     }
                 }
+                messageTypePointer = JsonPointer.compile(
+                    this.settings.messageTypeField.let {
+                        if (it.startsWith(SEPARATOR)) it else "$SEPARATOR$it"
+                    }
+                )
             }
         }
+        messagePathProvider = IMessagePathProvider(messageFactory)
 
         this.requestInfos = requestInfos
         this.responseInfos = responseInfos
@@ -156,11 +165,8 @@ class JsonPipelineCodec : IPipelineCodec {
             val sfMessage = protoConverter.fromProtoMessage(parsedMessage, true)
 
             if (settings.messageTypeDetection == BY_INNER_FIELD) {
-                val messageTypeField = settings.messageTypeField
-                check(messageTypeField in messageStructure.fields) { "Message $messageType does not have the type field: $messageTypeField" }
-
-                if (!sfMessage.isFieldSet(messageTypeField)) {
-                    sfMessage[messageTypeField] = messageStructure.requireMessageType()
+                checkNotNull(messageTypePointer) { "'messageTypePointer' is not set" }.also {
+                    messagePathProvider.set(sfMessage, it, messageStructure, messageStructure.requireMessageType(), replaceIfExist = false)
                 }
             }
 
@@ -216,7 +222,8 @@ class JsonPipelineCodec : IPipelineCodec {
             val messageName = when (settings.messageTypeDetection) {
                 BY_INNER_FIELD -> {
                     val json = OBJECT_READER.readTree(body)
-                    json.path(settings.messageTypeField).takeIf { it.isTextual }?.run { messageNames[textValue()] } ?: error("No valid type field in: $json")
+                    val pointer = checkNotNull(messageTypePointer) { "'messageTypePointer' is not set" }
+                    json.at(pointer).takeIf { it.isTextual }?.run { messageNames[textValue()] } ?: error("No valid type field $pointer in: $json")
                 }
                 BY_HTTP_METHOD_AND_URI -> {
                     val method = requireNotNull(metadataProperties[METHOD_METADATA_PROPERTY]) { "Message has no '$METHOD_METADATA_PROPERTY' metadata property: ${rawMessage.toDebugString()}" }
