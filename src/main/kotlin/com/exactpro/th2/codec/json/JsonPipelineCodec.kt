@@ -67,7 +67,7 @@ class JsonPipelineCodec : IPipelineCodec {
     private lateinit var responseInfos: Map<MessageName, MessageInfo>
     private lateinit var messageNames: Map<MessageType, MessageName>
     private lateinit var messagePathProvider: IMessagePathProvider
-    private lateinit var messageTypePointer: JsonPointer
+    private var messageTypePointer: JsonPointer = empty()
 
     override fun init(dictionary: IDictionaryStructure, settings: IPipelineCodecSettings?) {
         check(!this::dictionary.isInitialized) { "Codec is already initialized" }
@@ -126,16 +126,12 @@ class JsonPipelineCodec : IPipelineCodec {
                         }
                     }
                 }
+                messageTypePointer = with(this.settings) {
+                    JsonPointer.compile(messageTypeField.let { if (it.startsWith(SEPARATOR)) it else "$SEPARATOR$it" })
+                }
             }
         }
         messagePathProvider = IMessagePathProvider(messageFactory)
-        messageTypePointer = with(this.settings) {
-            if (messageTypeDetection == BY_INNER_FIELD) {
-                JsonPointer.compile(messageTypeField.let { if (it.startsWith(SEPARATOR)) it else "$SEPARATOR$it" })
-            } else {
-                empty()
-            }
-        }
 
         this.requestInfos = requestInfos
         this.responseInfos = responseInfos

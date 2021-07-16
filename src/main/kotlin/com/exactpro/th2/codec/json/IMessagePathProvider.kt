@@ -107,7 +107,7 @@ class IMessagePathProvider(
             path.matchingProperty == JSONVisitorUtility.getJsonFieldName(field)
         }
         checkNotNull(matchedFieldStruct) { "cannot find a field ${path.matchingProperty} in the message ${structure.name}" }
-        val result: Any? = with(matchedFieldStruct) {
+        return matchedFieldStruct to with(matchedFieldStruct) {
             get(name) ?: when {
                 !createMissing -> null
                 isCollection -> arrayListOf<Any?>()
@@ -115,7 +115,6 @@ class IMessagePathProvider(
                 else -> null
             }?.also { set(name, it) }
         }
-        return matchedFieldStruct to result
     }
 
     private fun MutableList<*>.getPath(
