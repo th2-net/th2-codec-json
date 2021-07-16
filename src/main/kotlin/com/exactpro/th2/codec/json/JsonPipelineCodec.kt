@@ -139,6 +139,10 @@ class JsonPipelineCodec(
         val builder = MessageGroup.newBuilder()
 
         for (message in messages) {
+            if (!message.hasMessage()) {
+                builder.addMessages(message)
+                continue
+            }
             if (message.message.metadata.run { protocol.isNotEmpty() && protocol != PROTOCOL }) {
                 builder.addMessages(message)
                 continue
