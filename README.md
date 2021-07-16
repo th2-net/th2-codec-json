@@ -1,4 +1,4 @@
-# JSON Codec v0.1.3
+# JSON Codec v0.2.0
 
 This microservice can encode and decode JSON messages received via HTTP or any other transport
 
@@ -10,7 +10,29 @@ Main configuration is done via setting following properties in `codecSettings` b
   Can be one of the following:
     + `BY_HTTP_METHOD_AND_URI` - message type will be detected based on the values of `method` and `uri` message metadata properties (default)
     + `BY_INNER_FIELD` - message type will be retrieved from a message field specified by `messageTypeField` setting
-+ **messageTypeField** - name of a field containing message type (used only if `messageTypeDetection` = `BY_INNER_FIELD`)
++ **messageTypeField** - a JSON pointer to the field containing message type (used only if `messageTypeDetection` = `BY_INNER_FIELD`).
+  More information about JSON pointer can be found [here](https://datatracker.ietf.org/doc/html/draft-ietf-appsawg-json-pointer-03#section-2).
+  **Examples:**
+  ```json
+  {
+    "simple": 42,
+    "object": {
+      "simple": 54
+    },
+    "simple_collection": [89, 5],
+    "object_collection": [
+      {
+        "simple": "test"
+      }
+    ]
+  }
+  ```
+  |JSON pointer|Result|
+  |:---|:---|
+  |/simple|42|
+  |/object/simple|54|
+  |/simple_collection/1|5|
+  |/object_collection/0/simple|test|
 + **rejectUnexpectedFields** - messages with unknown fields will be rejected during decoding (`true` by default)
 + **treatSimpleValuesAsStrings** - allows decoding of primitive values from JSON string e.g. `"1"` can be decoded as number, `"true"` as boolean, etc (`false` by default)
 
@@ -104,6 +126,12 @@ spec:
 ```
 
 ## Changelog
+
+### v0.2.0
+
+#### Added:
+
+* ability to use a JSON pointer to specify the path to the field with message type
 
 ### v0.1.3
 

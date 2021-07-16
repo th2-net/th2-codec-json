@@ -1,0 +1,22 @@
+<dictionary xmlns="http://exactprosystems.com/dictionary" name="json">
+    <fields/>
+    <messages>
+        <message name="Top">
+            <field name="Simple" type="java.lang.String"/>
+            <field name="SimpleCollection" type="java.lang.String" isCollection="true"/>
+            <field name="Complex" reference="M_Complex1"/>
+            <field name="ComplexCollection" reference="M_Complex1" isCollection="true"/>
+        </message>
+
+        <message id="M_Complex1" name="Complex1">
+            <field name="Simple" type="java.lang.String"/>
+            <field name="SimpleCollection" type="java.lang.String" isCollection="true"/>
+        </message>
+
+        <message name="AnotherTop">
+            <field name="Simple" type="java.lang.String">
+                <attribute name="FieldName" type="java.lang.String">simple</attribute>
+            </field>
+        </message>
+    </messages>
+</dictionary>
