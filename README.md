@@ -10,7 +10,7 @@ Main configuration is done via setting following properties in `codecSettings` b
   Can be one of the following:
     + `BY_HTTP_METHOD_AND_URI` - message type will be detected based on the values of `method` and `uri` message metadata properties (default)
     + `BY_INNER_FIELD` - message type will be retrieved from a message field specified by `messageTypeField` setting
-+ **messageTypeField** - a JSON pointer on the field containing message type (used only if `messageTypeDetection` = `BY_INNER_FIELD`).
++ **messageTypeField** - a JSON pointer to the field containing message type (used only if `messageTypeDetection` = `BY_INNER_FIELD`).
   More information about JSON pointer can be found [here](https://datatracker.ietf.org/doc/html/draft-ietf-appsawg-json-pointer-03#section-2).
   **Examples:**
   ```json

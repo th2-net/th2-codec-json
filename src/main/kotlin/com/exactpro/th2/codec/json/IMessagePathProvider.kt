@@ -48,9 +48,9 @@ class IMessagePathProvider(
         var currentStruct: IFieldStructure = structure
         var currentPath: JsonPointer = path
         do {
-            val result: Pair<Any?, IFieldStructure> = current.getPath(currentPath, currentStruct)
-            current = result.first ?: return null // some structures do not exist
-            currentStruct = result.second
+            val (value, struct) = current.getPath(currentPath, currentStruct)
+            current = value ?: return null // some structures do not exist
+            currentStruct = struct
             currentPath = currentPath.tail()
         } while (!currentPath.matches())
         return current?.let(clazz::cast)
@@ -136,10 +136,8 @@ class IMessagePathProvider(
                 add(if (structure.isComplex) factory.createMessage(structure.referenceName) else null)
             }
         }
-        return if (matchingIndex < size) {
-            get(matchingIndex) to structure
-        } else {
-            throw IllegalStateException("cannot get element at index $matchingIndex in collection ${structure.name} with size $size")
-        }
+        return getOrElse(matchingIndex) {
+            error("cannot get element at index $matchingIndex in collection ${structure.name} with size $size")
+        } to structure
     }
 }
