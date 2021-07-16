@@ -48,7 +48,7 @@ class IMessagePathProvider(
         var currentStruct: IFieldStructure = structure
         var currentPath: JsonPointer = path
         do {
-            val (value, struct) = current.getPath(currentPath, currentStruct)
+            val (struct, value ) = current.getPath(currentPath, currentStruct)
             current = value ?: return null // some structures do not exist
             currentStruct = struct
             currentPath = currentPath.tail()
@@ -70,18 +70,18 @@ class IMessagePathProvider(
         do {
             val next = currentPath.tail()
             val finalNode = next.matches()
-            val result: Pair<Any?, IFieldStructure> = current.getPath(currentPath, currentStruct, createMissing = true)
+            val (struct, existingValue) = current.getPath(currentPath, currentStruct, createMissing = true)
             if (finalNode) { // check if it was the end of the path
-                if (result.first != null && !replaceIfExist) return // value exists. Do not replace
+                if (existingValue != null && !replaceIfExist) return // value exists. Do not replace
                 when (current) {
-                    is IMessage -> current[result.second.name] = value
+                    is IMessage -> current[struct.name] = value
                     is MutableList<*> -> (current as MutableList<Any?>)[currentPath.matchingIndex] = value
-                    else -> throw IllegalStateException("unsupported match for type ${current?.let { it::class.java }}")
+                    else -> error("unsupported match for type ${current?.let { it::class.java }}")
                 }
                 return
             }
-            current = result.first
-            currentStruct = result.second
+            current = existingValue
+            currentStruct = struct
             currentPath = next
         } while (!currentPath.matches())
     }
@@ -90,43 +90,39 @@ class IMessagePathProvider(
         currentPath: JsonPointer,
         currentStruct: IFieldStructure,
         createMissing: Boolean = false
-    ): Pair<Any?, IFieldStructure> {
-        return when (this) {
-            is IMessage -> getPath(currentPath, currentStruct, createMissing)
-            is MutableList<*> -> getPath(currentPath, currentStruct, createMissing)
-            else -> throw IllegalStateException("cannot extract path from ${this?.let { it::class.java }} in field ${currentStruct.name}")
-        }
+    ): Pair<IFieldStructure, Any?> = when (this) {
+        is IMessage -> getPath(currentPath, currentStruct, createMissing)
+        is MutableList<*> -> getPath(currentPath, currentStruct, createMissing)
+        else -> error("cannot extract path from ${this?.let { it::class.java }} in field ${currentStruct.name}")
     }
 
+    @Suppress("IMPLICIT_CAST_TO_ANY") // for when statement
     private fun IMessage.getPath(
         path: JsonPointer,
         structure: IFieldStructure,
         createMissing: Boolean = false
-    ): Pair<Any?, IFieldStructure> {
+    ): Pair<IFieldStructure, Any?> {
         check(!path.mayMatchElement()) { "path must match the field but matches the element at index ${path.matchingIndex}" }
         val matchedFieldStruct = structure.fields.values.firstOrNull { field ->
             path.matchingProperty == JSONVisitorUtility.getJsonFieldName(field)
         }
         checkNotNull(matchedFieldStruct) { "cannot find a field ${path.matchingProperty} in the message ${structure.name}" }
         val result: Any? = with(matchedFieldStruct) {
-            get(name) ?: run {
-                val missing: Any? = when {
-                    !createMissing -> null
-                    isCollection -> arrayListOf<Any?>()
-                    isComplex -> factory.createMessage(referenceName)
-                    else -> null
-                }
-                missing?.also { set(name, it) }
-            }
+            get(name) ?: when {
+                !createMissing -> null
+                isCollection -> arrayListOf<Any?>()
+                isComplex -> factory.createMessage(referenceName)
+                else -> null
+            }?.also { set(name, it) }
         }
-        return result to matchedFieldStruct
+        return matchedFieldStruct to result
     }
 
     private fun MutableList<*>.getPath(
         path: JsonPointer,
         structure: IFieldStructure,
         createMissing: Boolean = false
-    ): Pair<Any?, IFieldStructure> {
+    ): Pair<IFieldStructure, Any?> {
         check(path.mayMatchElement()) { "path must match the element in collection but matches ${path.matchingProperty} field" }
         @Suppress("UNCHECKED_CAST")
         this as MutableList<Any?>
@@ -136,8 +132,8 @@ class IMessagePathProvider(
                 add(if (structure.isComplex) factory.createMessage(structure.referenceName) else null)
             }
         }
-        return getOrElse(matchingIndex) {
+        return structure to getOrElse(matchingIndex) {
             error("cannot get element at index $matchingIndex in collection ${structure.name} with size $size")
-        } to structure
+        }
     }
 }
