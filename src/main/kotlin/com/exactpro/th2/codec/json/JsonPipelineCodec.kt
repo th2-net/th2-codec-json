@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,8 @@ import com.exactpro.sf.services.http.HTTPMessageHelper.REQUEST_RESPONSE_ATTRIBUT
 import com.exactpro.sf.services.http.HTTPMessageHelper.REQUEST_URI_ATTRIBUTE
 import com.exactpro.sf.services.json.JSONDecoder
 import com.exactpro.sf.services.json.JSONEncoder
-import com.exactpro.th2.codec.MessageFactoryProxy
 import com.exactpro.th2.codec.api.IPipelineCodec
-import com.exactpro.th2.codec.api.IPipelineCodecSettings
+import com.exactpro.th2.codec.json.JsonPipelineCodecFactory.Companion.PROTOCOL
 import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.BY_HTTP_METHOD_AND_URI
 import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.BY_INNER_FIELD
 import com.exactpro.th2.codec.util.toDebugString
@@ -44,6 +43,7 @@ import com.exactpro.th2.common.grpc.RawMessage
 import com.exactpro.th2.common.message.plusAssign
 import com.exactpro.th2.sailfish.utils.IMessageToProtoConverter
 import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter
+import com.exactpro.th2.sailfish.utils.factory.MessageFactoryProxy
 import com.fasterxml.jackson.core.JsonPointer
 import com.fasterxml.jackson.core.JsonPointer.SEPARATOR
 import com.fasterxml.jackson.core.JsonPointer.empty
@@ -54,33 +54,25 @@ import io.netty.channel.embedded.EmbeddedChannel
 typealias MessageName = String
 typealias MessageType = String
 
-class JsonPipelineCodec : IPipelineCodec {
-    override val protocol: String = PROTOCOL
+class JsonPipelineCodec(
+    private val dictionary: IDictionaryStructure,
+    private val settings: JsonPipelineCodecSettings
+) : IPipelineCodec {
+    private val messageFactory: IMessageFactory
+    private val protoConverter: ProtoToIMessageConverter
+    private val encodeChannel: EmbeddedChannel
+    private val decodeChannel: EmbeddedChannel
+    private val requestInfos: Map<MessageName, MessageInfo>
+    private val responseInfos: Map<MessageName, MessageInfo>
+    private val messageNames: Map<MessageType, MessageName>
+    private val messagePathProvider: IMessagePathProvider
+    private val messageTypePointer: JsonPointer
 
-    private lateinit var dictionary: IDictionaryStructure
-    private lateinit var settings: JsonPipelineCodecSettings
-    private lateinit var messageFactory: IMessageFactory
-    private lateinit var protoConverter: ProtoToIMessageConverter
-    private lateinit var encodeChannel: EmbeddedChannel
-    private lateinit var decodeChannel: EmbeddedChannel
-    private lateinit var requestInfos: Map<MessageName, MessageInfo>
-    private lateinit var responseInfos: Map<MessageName, MessageInfo>
-    private lateinit var messageNames: Map<MessageType, MessageName>
-    private lateinit var messagePathProvider: IMessagePathProvider
-    private var messageTypePointer: JsonPointer = empty()
-
-    override fun init(dictionary: IDictionaryStructure, settings: IPipelineCodecSettings?) {
-        check(!this::dictionary.isInitialized) { "Codec is already initialized" }
-
-        this.dictionary = dictionary
-        this.settings = requireNotNull(settings as? JsonPipelineCodecSettings) {
-            "settings is not an instance of ${JsonPipelineCodecSettings::class.java}: $settings"
-        }
-
+    init {
         SailfishURI.parse(dictionary.namespace).let { uri ->
             this.messageFactory = JSONMessageFactory().apply { init(uri, dictionary) }
             this.protoConverter =
-                ProtoToIMessageConverter(MessageFactoryProxy(dictionary, messageFactory), dictionary, uri)
+                ProtoToIMessageConverter(MessageFactoryProxy(messageFactory, uri, dictionary), dictionary, uri)
         }
 
         val jsonSettings = this.settings.toJsonSettings()
@@ -126,12 +118,15 @@ class JsonPipelineCodec : IPipelineCodec {
                         }
                     }
                 }
-                messageTypePointer = with(this.settings) {
-                    JsonPointer.compile(messageTypeField.let { if (it.startsWith(SEPARATOR)) it else "$SEPARATOR$it" })
-                }
             }
         }
         messagePathProvider = IMessagePathProvider(messageFactory)
+        messageTypePointer = with(this.settings) {
+            when(messageTypeDetection) {
+                BY_INNER_FIELD -> JsonPointer.compile(messageTypeField.let { if (it.startsWith(SEPARATOR)) it else "$SEPARATOR$it" })
+                BY_HTTP_METHOD_AND_URI -> empty()
+            }
+        }
 
         this.requestInfos = requestInfos
         this.responseInfos = responseInfos
@@ -141,14 +136,14 @@ class JsonPipelineCodec : IPipelineCodec {
     override fun encode(messageGroup: MessageGroup): MessageGroup {
         val messages = messageGroup.messagesList
 
-        if (messages.isEmpty() || messages.none { it.message.metadata.protocol == PROTOCOL }) {
-            return messageGroup
-        }
-
         val builder = MessageGroup.newBuilder()
 
         for (message in messages) {
-            if (message.message.metadata.protocol != PROTOCOL) {
+            if (!message.hasMessage()) {
+                builder.addMessages(message)
+                continue
+            }
+            if (message.message.metadata.run { protocol.isNotEmpty() && protocol != PROTOCOL }) {
                 builder.addMessages(message)
                 continue
             }
@@ -273,7 +268,6 @@ class JsonPipelineCodec : IPipelineCodec {
     }
 
     companion object {
-        private const val PROTOCOL = "json"
         private const val CLIENT_NAME = "codec"
         private const val REQUEST_URI_MESSAGE = REQUEST_URI_ATTRIBUTE
 

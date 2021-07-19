@@ -10,7 +10,7 @@ apply plugin: 'com.palantir.docker'
 
 ext {
     sharedDir = file("${project.rootDir}/shared")
-    sailfishVersion = '3.2.1594'
+    sailfishVersion = '3.2.1622'
 }
 
 group = 'com.exactpro.th2'
@@ -62,9 +62,9 @@ jar {
 dependencies {
     api platform('com.exactpro.th2:bom:3.0.0')
 
-    implementation 'com.exactpro.th2:common:3.16.0'
-    implementation 'com.exactpro.th2:codec:3.2.0'
-    implementation 'com.exactpro.th2:sailfish-utils:3.3.5'
+    implementation 'com.exactpro.th2:common:3.17.0'
+    implementation 'com.exactpro.th2:codec:4.0.0'
+    implementation 'com.exactpro.th2:sailfish-utils:3.5.0'
 
     implementation "com.exactpro.sf:sailfish-core:${sailfishVersion}"
     implementation "com.exactpro.sf:service-http:${sailfishVersion}"
@@ -74,7 +74,7 @@ dependencies {
 
     implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib-jdk8', version: kotlin_version
     implementation group: 'org.jetbrains.kotlin', name: 'kotlin-reflect', version: kotlin_version
-    implementation group: 'io.github.microutils', name: 'kotlin-logging', version: '1.7.9'
+    implementation group: 'io.github.microutils', name: 'kotlin-logging', version: '2.0.10'
 
     testImplementation "org.junit.jupiter:junit-jupiter:5.6.2"
     testImplementation group: 'org.jetbrains.kotlin', name: 'kotlin-test-junit5', version: kotlin_version
@@ -115,7 +115,5 @@ compileTestKotlin {
 }
 
 serviceLoader {
-    serviceInterface 'com.exactpro.th2.codec.api.IPipelineCodec'
-    serviceInterface 'com.exactpro.th2.codec.api.IPipelineCodecSettings'
-    serviceInterface 'com.exactpro.th2.codec.api.IPipelineCodecSettingsTypeProvider'
+    serviceInterface 'com.exactpro.th2.codec.api.IPipelineCodecFactory'
 }
