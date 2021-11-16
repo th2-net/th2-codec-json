@@ -1,4 +1,4 @@
-# JSON Codec v0.3.0
+# JSON Codec v0.4.0
 
 This microservice can encode and decode JSON messages received via HTTP or any other transport
 
@@ -67,7 +67,7 @@ metadata:
   name: codec-json
 spec:
   image-name: ghcr.io/th2-net/th2-codec-json
-  image-version: 0.3.0
+  image-version: 0.4.0
   custom-config:
     codecSettings:
       messageTypeDetection: BY_INNER_FIELD
@@ -126,6 +126,22 @@ spec:
 ```
 
 ## Changelog
+
+### v0.4.0
+
+#### Added:
+
+* ability to decode/encode simple values from JSON root
+
+#### Changed:
+
+* update `th2-codec` version from 4.0.0 to 4.1.1
+* update `sailfish` dependencies from 3.2.1622 to 3.2.1736
+* update `common` version from 3.17.0 to 3.29.1
+
+#### Fixed:
+
+* The filter for pins by `message_type` is not working
 
 ### v0.3.0
 
