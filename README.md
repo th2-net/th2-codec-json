@@ -1,4 +1,4 @@
-# JSON Codec v0.4.0
+# JSON Codec v0.4.1
 
 This microservice can encode and decode JSON messages received via HTTP or any other transport
 
@@ -67,7 +67,7 @@ metadata:
   name: codec-json
 spec:
   image-name: ghcr.io/th2-net/th2-codec-json
-  image-version: 0.4.0
+  image-version: 0.4.1
   custom-config:
     codecSettings:
       messageTypeDetection: BY_INNER_FIELD
@@ -126,6 +126,13 @@ spec:
 ```
 
 ## Changelog
+
+### v0.4.1
+
+#### Changed:
+
+* bump `com.exactpro.th2:common` dependency to `3.31.0`
+* bump Kotlin to `1.5.31`
 
 ### v0.4.0
 

@@ -3,3 +3,4 @@ shared/
 .gradle/
 .idea/
 logs/
+out/
