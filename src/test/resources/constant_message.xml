@@ -1,0 +1,16 @@
+<dictionary xmlns="http://exactprosystems.com/dictionary" name="json">
+    <fields/>
+    <messages>
+        <message id="M_Constant_Simple" name="Constant">
+            <field name="SimpleOne" type="java.lang.String"/>
+            <field name="SimpleTwo" type="java.lang.String"/>
+            <field name="SimpleThree" type="java.lang.String"/>
+        </message>
+
+        <message id="M_Constant_Default" name="Constant_Default">
+            <field name="SimpleOne" type="java.lang.String" defaultvalue="test1"/>
+            <field name="SimpleTwo" type="java.lang.String" defaultvalue="test2"/>
+            <field name="SimpleThree" type="java.lang.String" defaultvalue="test3"/>
+        </message>
+    </messages>
+</dictionary>

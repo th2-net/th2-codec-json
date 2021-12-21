@@ -20,17 +20,21 @@ import com.exactpro.sf.services.json.JsonSettings
 import com.exactpro.th2.codec.api.IPipelineCodecSettings
 import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.BY_HTTP_METHOD_AND_URI
 import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.BY_INNER_FIELD
+import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.CONSTANT
 
 data class JsonPipelineCodecSettings(
     val messageTypeDetection: MessageTypeDetection = BY_HTTP_METHOD_AND_URI,
     val messageTypeField: String = "",
     val rejectUnexpectedFields: Boolean = true,
-    val treatSimpleValuesAsStrings: Boolean = false
+    val treatSimpleValuesAsStrings: Boolean = false,
+    val constantMessageType: String = ""
 ) : IPipelineCodecSettings {
     init {
-        if (messageTypeDetection == BY_INNER_FIELD) {
-            check(messageTypeField.isNotBlank()) { "${::messageTypeDetection.name} is $BY_INNER_FIELD but ${::messageTypeField.name} is blank" }
+        when (messageTypeDetection) {
+            BY_INNER_FIELD -> check(messageTypeField.isNotBlank()) { "${::messageTypeDetection.name} is $BY_INNER_FIELD but ${::messageTypeField.name} is blank" }
+            CONSTANT -> check(constantMessageType.isNotBlank()) { "${::messageTypeDetection.name} is $CONSTANT but ${::constantMessageType.name} is blank" }
         }
+
     }
 
     fun toJsonSettings(): JsonSettings = JsonSettings().apply {
@@ -40,6 +44,7 @@ data class JsonPipelineCodecSettings(
 
     enum class MessageTypeDetection {
         BY_HTTP_METHOD_AND_URI,
-        BY_INNER_FIELD
+        BY_INNER_FIELD,
+        CONSTANT
     }
 }

@@ -34,6 +34,7 @@ import com.exactpro.th2.codec.api.IPipelineCodec
 import com.exactpro.th2.codec.json.JsonPipelineCodecFactory.Companion.PROTOCOL
 import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.BY_HTTP_METHOD_AND_URI
 import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.BY_INNER_FIELD
+import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.CONSTANT
 import com.exactpro.th2.codec.util.toDebugString
 import com.exactpro.th2.common.grpc.AnyMessage
 import com.exactpro.th2.common.grpc.Direction.FIRST
@@ -124,7 +125,7 @@ class JsonPipelineCodec(
         messageTypePointer = with(this.settings) {
             when(messageTypeDetection) {
                 BY_INNER_FIELD -> JsonPointer.compile(messageTypeField.let { if (it.startsWith(SEPARATOR)) it else "$SEPARATOR$it" })
-                BY_HTTP_METHOD_AND_URI -> empty()
+                else -> empty()
             }
         }
 
@@ -173,12 +174,12 @@ class JsonPipelineCodec(
             val rawMessage = checkNotNull(encodedMessage.metaData.rawMessage) { "Encoded messages has no raw message in its metadata: $encodedMessage" }
 
             val additionalMetadataProperties = when (this.settings.messageTypeDetection) {
-                BY_INNER_FIELD -> null
                 BY_HTTP_METHOD_AND_URI -> requestInfos[messageType]?.run {
                     val paramMessage: IMessage? = sfMessage[REQUEST_URI_MESSAGE]
                     val paramValues: Map<String, Any?> = paramMessage?.run { fieldNames.associateWith(::get) } ?: mapOf()
                     mapOf(METHOD_METADATA_PROPERTY to method, URI_METADATA_PROPERTY to uri.resolve(paramValues))
                 }
+                else -> null
             }
 
             builder += RawMessage.newBuilder().apply {
@@ -219,6 +220,7 @@ class JsonPipelineCodec(
             val messageId = metadata.id
 
             val messageName = when (settings.messageTypeDetection) {
+                CONSTANT -> settings.constantMessageType
                 BY_INNER_FIELD -> {
                     val json = OBJECT_READER.readTree(body)
                     json.at(messageTypePointer).takeIf { it.isTextual }?.run { messageNames[textValue()] }
