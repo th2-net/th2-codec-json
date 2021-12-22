@@ -70,6 +70,10 @@ class JsonPipelineCodec(
     private val messageTypePointer: JsonPointer
 
     init {
+        if (settings.messageTypeDetection == CONSTANT) {
+            check(settings.constantMessageType.isNotEmpty()) { "Constant message type parameter is required in CONSTANT mode" }
+        }
+
         SailfishURI.parse(dictionary.namespace).let { uri ->
             this.messageFactory = JSONMessageFactory().apply { init(uri, dictionary) }
             this.protoConverter =
