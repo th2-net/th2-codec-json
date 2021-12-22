@@ -20,5 +20,5 @@ import java.io.InputStream
 import kotlin.test.fail
 
 fun getResourceAsStream(path: String): InputStream {
-    return String::class.java.classLoader.getResourceAsStream(path) ?: fail("Resource [$path] is required")
+    return String.Companion::class.java.classLoader.getResourceAsStream(path) ?: fail("Resource [$path] is required")
 }
