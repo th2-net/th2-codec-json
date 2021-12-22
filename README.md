@@ -139,7 +139,6 @@ spec:
 #### Changed:
 
 * bump `com.exactpro.th2:common` dependency to `3.31.1`
-* bump Kotlin to `1.5.31`
 
 ### v0.4.1
 

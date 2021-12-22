@@ -17,7 +17,8 @@
 package com.exactpro.th2.codec.json
 
 import java.io.InputStream
+import kotlin.test.fail
 
 fun getResourceAsStream(path: String): InputStream {
-    return String.javaClass.classLoader.getResource(path)!!.openStream()
+    return String::class.java.classLoader.getResourceAsStream(path) ?: fail("Resource [$path] is required")
 }
