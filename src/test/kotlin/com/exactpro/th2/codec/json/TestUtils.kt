@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+package com.exactpro.th2.codec.json
+
 import java.io.InputStream
 
 fun getResourceAsStream(path: String): InputStream {

@@ -71,7 +71,7 @@ class JsonPipelineCodec(
 
     init {
         if (settings.messageTypeDetection == CONSTANT) {
-            check(settings.constantMessageType.isNotEmpty()) { "Constant message type parameter is required in CONSTANT mode" }
+            check(dictionary.messages.contains(settings.constantMessageType)) { "Constant message '${settings.constantMessageType}' is required to be in dictionary" }
         }
 
         SailfishURI.parse(dictionary.namespace).let { uri ->
