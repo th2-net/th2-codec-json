@@ -19,5 +19,5 @@ package com.exactpro.th2.codec.json
 import java.io.InputStream
 
 fun getResourceAsStream(path: String): InputStream {
-    return object {}.javaClass.getResource(path)!!.openStream()
+    return String.javaClass.classLoader.getResource(path)!!.openStream()
 }

@@ -27,7 +27,6 @@ import com.exactpro.th2.common.message.messageType
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.google.protobuf.ByteString
-import getResourceAsStream
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
