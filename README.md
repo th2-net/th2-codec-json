@@ -81,7 +81,7 @@ spec:
       messageTypeField: "messageType"
       rejectUnexpectedFields: true
       treatSimpleValuesAsStrings: false
-  type: th2-conn
+  type: th2-codec
   pins:
     # encoder
     - name: in_codec_encode
