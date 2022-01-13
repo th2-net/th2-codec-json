@@ -37,8 +37,9 @@ class UriPattern(private val uriPattern: String) {
                 .asSequence()
                 .map { it.split(NAME_VALUE_SEPARATOR, limit = 2) }
                 .associate { (name, value) ->
-                    name to when (value) {
-                        PARAM_PLACEHOLDER -> ANY_VALUE_PATTERN
+                    name to when {
+                        value == PARAM_PLACEHOLDER -> ANY_VALUE_PATTERN
+                        value.contains(PARAM_PLACEHOLDER) -> value.urlDecode().replace(PARAM_PLACEHOLDER, ANY_VALUE_PATTERN)
                         else -> Regex.escape(value.urlDecode())
                     }.toRegex()
                 }
@@ -82,6 +83,12 @@ class UriPattern(private val uriPattern: String) {
     fun resolve(paramValues: Map<String, Any?>): String = PARAM_MATCHER.replace(uriPattern) {
         val paramName = it.groups[NAME_GROUP]!!.value
         requireNotNull(paramValues[paramName]) { "Missing URI parameter: $paramName" }.toString().urlEncode()
+    }
+
+    override fun toString(): String {
+        return "${pathMatcher.pattern}?${queryParamMatchers.entries.joinToString(separator = PARAM_SEPARATOR.toString()) {
+            "${it.key}$NAME_VALUE_SEPARATOR${it.value.pattern}"
+        }}"
     }
 
     companion object {
