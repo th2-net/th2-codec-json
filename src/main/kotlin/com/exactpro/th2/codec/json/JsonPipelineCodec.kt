@@ -247,7 +247,7 @@ class JsonPipelineCodec(
             })
 
             if (decodedMessage.metaData.isRejected) {
-                error("Message was rejected due to: ${decodedMessage.metaData.rejectReason}")
+                error("Message ${decodedMessage.name} was rejected due to: ${decodedMessage.metaData.rejectReason}")
             }
 
             builder += IMESSAGE_CONVERTER.toProtoMessage(decodedMessage).apply {

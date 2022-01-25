@@ -1,4 +1,4 @@
-# JSON Codec v0.5.0
+# JSON Codec v0.5.1
 
 This microservice can encode and decode JSON messages received via HTTP or any other transport
 
@@ -133,6 +133,14 @@ spec:
 ```
 
 ## Changelog
+
+### v0.5.1
+
+#### Changed:
+
+* rejection error message
+* bump `com.exactpro.th2:common` dependency to `3.32.0`
+* bump `com.exactpro.th2:bom` dependency to `3.1.0`
 
 ### v0.5.0
 
