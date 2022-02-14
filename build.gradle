@@ -62,8 +62,8 @@ jar {
 dependencies {
     api platform('com.exactpro.th2:bom:3.1.0')
 
-    implementation 'com.exactpro.th2:common:3.32.0'
-    implementation 'com.exactpro.th2:codec:4.3.0'
+    implementation 'com.exactpro.th2:common:3.33.0'
+    implementation 'com.exactpro.th2:codec:4.6.0-th2-1617-grpc-interface-1837706652-SNAPSHOT'
     implementation 'com.exactpro.th2:sailfish-utils:3.10.1'
 
     implementation "com.exactpro.sf:sailfish-core:${sailfishVersion}"
@@ -74,11 +74,11 @@ dependencies {
 
     implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib-jdk8', version: kotlin_version
     implementation group: 'org.jetbrains.kotlin', name: 'kotlin-reflect', version: kotlin_version
-    implementation group: 'io.github.microutils', name: 'kotlin-logging', version: '2.0.10'
+    implementation group: 'io.github.microutils', name: 'kotlin-logging', version: '2.1.21'
 
-    testImplementation "org.junit.jupiter:junit-jupiter:5.6.2"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
     testImplementation group: 'org.jetbrains.kotlin', name: 'kotlin-test-junit5', version: kotlin_version
-    testImplementation testFixtures('com.exactpro.th2:common:3.31.1')
+    testImplementation testFixtures('com.exactpro.th2:common:3.33.0')
 }
 
 test {
