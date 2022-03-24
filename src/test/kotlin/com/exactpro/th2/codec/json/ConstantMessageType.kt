@@ -27,10 +27,47 @@ import com.exactpro.th2.common.message.messageType
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.google.protobuf.ByteString
+import com.google.protobuf.TextFormat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 class ConstantMessageType {
+@Test
+fun pipelineTest() {
+    val raw_message_str = """
+      metadata {
+        id {
+          direction: SECOND
+          subsequence: 2
+        }
+        timestamp {}
+        properties {
+          key: "method"
+          value: "GET"
+        }
+        properties {
+          key: "uri"
+          value: "http://www.test.com/hello.txt"
+        }
+      }
+      body: "{\"SimpleOne\":\"SimpleOne Value\",\"SimpleTwo\":\"SimpleTwo Value\",\"SimpleThree\":\"SimpleThree Value\"}"
+      parent_event_id {
+        id: "123"
+      }
+    """.trimIndent()
+
+    val rawJsonMessage = TextFormat.parse(raw_message_str, RawMessage::class.java)
+    val group = MessageGroup.newBuilder().addMessages(AnyMessage.newBuilder().setRawMessage(rawJsonMessage)).build()
+    val decodeResult = codec.decode(group)
+
+    decodeResult.messagesList[0].message.apply {
+        Assertions.assertEquals("Constant", messageType)
+        assertString("SimpleOne", "SimpleOne Value")
+        assertString("SimpleTwo", "SimpleTwo Value")
+        assertString("SimpleThree", "SimpleThree Value")
+    }
+}
+
 
     @Test
     fun `simple constant messageType test decode`() {
@@ -75,7 +112,6 @@ class ConstantMessageType {
             Assertions.assertEquals("test3", json.get("SimpleThree")?.asText())
         }
     }
-
 
     companion object {
         val codec = JsonPipelineCodecFactory().apply {
