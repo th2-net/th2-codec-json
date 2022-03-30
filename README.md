@@ -1,4 +1,4 @@
-# JSON Codec v0.5.0
+# JSON Codec v0.5.1
 
 This microservice can encode and decode JSON messages received via HTTP or any other transport
 
@@ -89,50 +89,67 @@ spec:
       attributes:
         - encoder_in
         - subscribe
+        - group
     - name: out_codec_encode
       connection-type: mq
       attributes:
         - encoder_out
         - publish
+        - group
     # decoder
     - name: in_codec_decode
       connection-type: mq
       attributes:
         - decoder_in
         - subscribe
+        - group
     - name: out_codec_decode
       connection-type: mq
       attributes:
         - decoder_out
         - publish
+        - group
     # encoder general (technical)
     - name: in_codec_general_encode
       connection-type: mq
       attributes:
         - general_encoder_in
         - subscribe
+        - group
     - name: out_codec_general_encode
       connection-type: mq
       attributes:
         - general_encoder_out
         - publish
+        - group
     # decoder general (technical)
     - name: in_codec_general_decode
       connection-type: mq
       attributes:
         - general_decoder_in
         - subscribe
+        - group
     - name: out_codec_general_decode
       connection-type: mq
       attributes:
         - general_decoder_out
         - publish
+        - group
   extended-settings:
     service:
       enabled: false
 ```
 
 ## Changelog
+
+### v0.5.1
+
+#### Changed:
+
+* rejection error message
+* bump `com.exactpro.th2:common` dependency to `3.32.0`
+* bump `com.exactpro.th2:bom` dependency to `3.1.0`
+* bump `com.exactpro.th2:codec` dependency to `4.3.0`
 
 ### v0.5.0
 
