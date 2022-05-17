@@ -10,7 +10,7 @@ apply plugin: 'com.palantir.docker'
 
 ext {
     sharedDir = file("${project.rootDir}/shared")
-    sailfishVersion = '3.2.1776'
+    sailfishVersion = '3.2.1839'
 }
 
 group = 'com.exactpro.th2'
@@ -62,8 +62,8 @@ jar {
 dependencies {
     api platform('com.exactpro.th2:bom:3.1.0')
 
-    implementation 'com.exactpro.th2:common:3.35.0-TH2-3340-2058762205-SNAPSHOT'
-    implementation 'com.exactpro.th2:codec:4.7.0-TH2-3340-2064472686-SNAPSHOT'
+    implementation 'com.exactpro.th2:common:3.37.2'
+    implementation 'com.exactpro.th2:codec:4.8.0-TH2-3340-2338228461-SNAPSHOT'
     implementation 'com.exactpro.th2:sailfish-utils:3.12.3'
 
     implementation "com.exactpro.sf:sailfish-core:${sailfishVersion}"
@@ -78,7 +78,7 @@ dependencies {
 
     testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
     testImplementation group: 'org.jetbrains.kotlin', name: 'kotlin-test-junit5', version: kotlin_version
-    testImplementation testFixtures('com.exactpro.th2:common:3.33.0')
+    testImplementation testFixtures('com.exactpro.th2:common:3.37.2')
 }
 
 test {
