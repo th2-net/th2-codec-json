@@ -1,4 +1,4 @@
-# JSON Codec v0.6.0
+# JSON Codec v0.7.0
 
 This microservice can encode and decode JSON messages received via HTTP or any other transport
 
@@ -142,11 +142,18 @@ spec:
 
 ## Changelog
 
-### v0.6.0
+### v0.7.0
 
 #### Changed:
 
 * gRPC interface for codec pipeline
+
+### v0.6.0
+
+#### Changed:
+
+* Support for parameters substitution in URI.
+* Codec core version updated from `4.3.0` to `4.7.0`
 
 ### v0.5.1
 
