@@ -63,7 +63,7 @@ dependencies {
     api platform('com.exactpro.th2:bom:3.1.0')
 
     implementation 'com.exactpro.th2:common:3.37.2'
-    implementation 'com.exactpro.th2:codec:4.8.0-TH2-3340-2338228461-SNAPSHOT'
+    implementation 'com.exactpro.th2:codec:4.8.0-TH2-3340-2346799275-SNAPSHOT'
     implementation 'com.exactpro.th2:sailfish-utils:3.12.3'
 
     implementation "com.exactpro.sf:sailfish-core:${sailfishVersion}"
