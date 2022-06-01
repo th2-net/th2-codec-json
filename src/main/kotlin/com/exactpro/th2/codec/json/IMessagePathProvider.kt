@@ -60,15 +60,11 @@ class IMessagePathProvider(
         var currentStruct: IFieldStructure = structure
         var currentPath: JsonPointer = path
         do {
-            val struct = currentStruct.findStructure(currentPath) ?: return false
-            currentStruct = struct
+            currentStruct = currentStruct.findStructure(currentPath) ?: return false
             currentPath = currentPath.tail()
-            if (currentPath.mayMatchElement()) {
-                currentPath = currentPath.tail()
-                if (!struct.isCollection) {
-                    return false
-                }
-            }
+            if (!currentPath.mayMatchElement()) continue
+            if (!currentStruct.isCollection) return false
+            currentPath = currentPath.tail()
         } while (!currentPath.matches())
         return !currentStruct.isComplex && !currentStruct.isCollection
     }
