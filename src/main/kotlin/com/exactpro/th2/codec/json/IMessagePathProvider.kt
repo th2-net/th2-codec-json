@@ -56,6 +56,23 @@ class IMessagePathProvider(
         return current?.let(clazz::cast)
     }
 
+    fun hasSimpleField(structure: IMessageStructure, path: JsonPointer): Boolean {
+        var currentStruct: IFieldStructure = structure
+        var currentPath: JsonPointer = path
+        do {
+            val struct = currentStruct.findStructure(currentPath) ?: return false
+            currentStruct = struct
+            currentPath = currentPath.tail()
+            if (currentPath.mayMatchElement()) {
+                currentPath = currentPath.tail()
+                if (!struct.isCollection) {
+                    return false
+                }
+            }
+        } while (!currentPath.matches())
+        return !currentStruct.isComplex && !currentStruct.isCollection
+    }
+
     @Suppress("UNCHECKED_CAST")
     fun set(
         message: IMessage,
@@ -103,9 +120,7 @@ class IMessagePathProvider(
         createMissing: Boolean = false
     ): Pair<IFieldStructure, Any?> {
         check(!path.mayMatchElement()) { "path must match the field but matches the element at index ${path.matchingIndex}" }
-        val matchedFieldStruct = structure.fields.values.firstOrNull { field ->
-            path.matchingProperty == JSONVisitorUtility.getJsonFieldName(field)
-        }
+        val matchedFieldStruct = structure.findStructure(path)
         checkNotNull(matchedFieldStruct) { "cannot find a field ${path.matchingProperty} in the message ${structure.name}" }
         return matchedFieldStruct to with(matchedFieldStruct) {
             get(name) ?: when {
@@ -115,6 +130,12 @@ class IMessagePathProvider(
                 else -> null
             }?.also { set(name, it) }
         }
+    }
+
+    private fun IFieldStructure.findStructure(
+        path: JsonPointer
+    ): IFieldStructure? = fields.values.firstOrNull { field ->
+        path.matchingProperty == JSONVisitorUtility.getJsonFieldName(field)
     }
 
     private fun MutableList<*>.getPath(

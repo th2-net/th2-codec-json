@@ -33,6 +33,7 @@ data class JsonPipelineCodecSettings(
         when (messageTypeDetection) {
             BY_INNER_FIELD -> check(messageTypeField.isNotBlank()) { "${::messageTypeDetection.name} is $BY_INNER_FIELD but ${::messageTypeField.name} is blank" }
             CONSTANT -> check(constantMessageType.isNotBlank()) { "${::messageTypeDetection.name} is $CONSTANT but ${::constantMessageType.name} is blank" }
+            BY_HTTP_METHOD_AND_URI -> {}
         }
 
     }

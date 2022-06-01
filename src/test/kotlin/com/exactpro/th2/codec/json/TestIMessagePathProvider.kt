@@ -30,8 +30,12 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class TestIMessagePathProvider {
     private val dictionary: IDictionaryStructure =
@@ -226,6 +230,42 @@ class TestIMessagePathProvider {
 
             val result = provider.get<String>(source, jsonPointer, structure(source))
             assertEquals("42", result)
+        }
+
+        @ParameterizedTest
+        @ValueSource(
+            strings = [
+                "/Simple",
+                "/Complex/Simple",
+                "/ComplexCollection/0/Simple"
+            ]
+        )
+        fun `finds simple fields`(path: String) {
+            assertTrue("cannot find path $path") {
+                provider.hasSimpleField(
+                    dictionary.messages["Top"]!!,
+                    JsonPointer.compile(path)
+                )
+            }
+        }
+
+        @ParameterizedTest
+        @ValueSource(
+            strings = [
+                "/UnExisting",
+                "/SimpleCollection",
+                "/Complex",
+                "/ComplexCollection",
+                "/ComplexCollection/SimpleCollection"
+            ]
+        )
+        fun `does not finds fields`(path: String) {
+            assertFalse("cannot find path $path") {
+                provider.hasSimpleField(
+                    dictionary.messages["Top"]!!,
+                    JsonPointer.compile(path)
+                )
+            }
         }
     }
 
