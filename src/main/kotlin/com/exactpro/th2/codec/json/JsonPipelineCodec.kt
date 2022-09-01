@@ -96,6 +96,14 @@ class JsonPipelineCodec(
         val responseInfos = hashMapOf<MessageName, MessageInfo>()
         val messageNames = hashMapOf<MessageName, MessageType>()
 
+        messagePathProvider = IMessagePathProvider(messageFactory)
+        messageTypePointer = with(this.settings) {
+            when(messageTypeDetection) {
+                BY_INNER_FIELD -> JsonPointer.compile(messageTypeField.let { if (it.startsWith(SEPARATOR)) it else "$SEPARATOR$it" })
+                else -> empty()
+            }
+        }
+
         when (this.settings.messageTypeDetection) {
             BY_HTTP_METHOD_AND_URI -> {
                 dictionary.messages.values.asSequence()
@@ -118,19 +126,13 @@ class JsonPipelineCodec(
             BY_INNER_FIELD -> {
                 dictionary.messages.forEach { (name, message) ->
                     message.messageType?.let { type ->
-                        if (this.settings.messageTypeField in message.fields) {
+                        if (messagePathProvider.hasSimpleField(message, messageTypePointer)) {
                             messageNames[type] = name
                         }
                     }
                 }
             }
-        }
-        messagePathProvider = IMessagePathProvider(messageFactory)
-        messageTypePointer = with(this.settings) {
-            when(messageTypeDetection) {
-                BY_INNER_FIELD -> JsonPointer.compile(messageTypeField.let { if (it.startsWith(SEPARATOR)) it else "$SEPARATOR$it" })
-                else -> empty()
-            }
+            CONSTANT -> {}
         }
 
         this.requestInfos = requestInfos

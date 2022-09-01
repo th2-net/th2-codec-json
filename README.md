@@ -74,7 +74,7 @@ metadata:
   name: codec-json
 spec:
   image-name: ghcr.io/th2-net/th2-codec-json
-  image-version: 0.4.1
+  image-version: 0.7.0
   custom-config:
     codecSettings:
       messageTypeDetection: BY_INNER_FIELD
@@ -147,6 +147,12 @@ spec:
 #### Changed:
 
 * gRPC interface for codec pipeline
+
+### v0.6.1
+
+#### Fixed:
+
+* Path to the message type did not work if it was a nested field
 
 ### v0.6.0
 
