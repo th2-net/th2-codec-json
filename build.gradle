@@ -10,7 +10,7 @@ apply plugin: 'com.palantir.docker'
 
 ext {
     sharedDir = file("${project.rootDir}/shared")
-    sailfishVersion = '3.2.1839'
+    sailfishVersion = '3.2.1877'
 }
 
 group = 'com.exactpro.th2'
@@ -60,11 +60,11 @@ jar {
 }
 
 dependencies {
-    api platform('com.exactpro.th2:bom:3.1.0')
+    api platform('com.exactpro.th2:bom:3.2.0')
 
-    implementation 'com.exactpro.th2:common:3.37.2'
-    implementation 'com.exactpro.th2:codec:4.8.0-TH2-3340-2346799275-SNAPSHOT'
-    implementation 'com.exactpro.th2:sailfish-utils:3.12.3'
+    implementation 'com.exactpro.th2:common:3.40.0'
+    implementation 'com.exactpro.th2:codec:4.8.0-TH2-3340-2970824137-SNAPSHOT'
+    implementation 'com.exactpro.th2:sailfish-utils:3.12.4'
 
     implementation "com.exactpro.sf:sailfish-core:${sailfishVersion}"
     implementation "com.exactpro.sf:service-http:${sailfishVersion}"
@@ -72,13 +72,13 @@ dependencies {
     implementation 'org.slf4j:slf4j-log4j12'
     implementation 'org.slf4j:slf4j-api'
 
-    implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib-jdk8', version: kotlin_version
-    implementation group: 'org.jetbrains.kotlin', name: 'kotlin-reflect', version: kotlin_version
-    implementation group: 'io.github.microutils', name: 'kotlin-logging', version: '2.1.21'
+    implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib-jdk8'
+    implementation group: 'org.jetbrains.kotlin', name: 'kotlin-reflect'
+    implementation group: 'io.github.microutils', name: 'kotlin-logging', version: '2.1.23'
 
-    testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.9.0"
     testImplementation group: 'org.jetbrains.kotlin', name: 'kotlin-test-junit5', version: kotlin_version
-    testImplementation testFixtures('com.exactpro.th2:common:3.37.2')
+    testImplementation testFixtures('com.exactpro.th2:common:3.40.0')
 }
 
 test {
