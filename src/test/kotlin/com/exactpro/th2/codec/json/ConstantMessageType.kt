@@ -17,7 +17,6 @@
 package com.exactpro.th2.codec.json
 
 import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.CONSTANT
-import com.exactpro.th2.common.assertString
 import com.exactpro.th2.common.grpc.AnyMessage
 import com.exactpro.th2.common.grpc.MessageGroup
 import com.exactpro.th2.common.grpc.RawMessage

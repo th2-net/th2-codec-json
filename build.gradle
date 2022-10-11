@@ -16,7 +16,7 @@ apply plugin: 'com.palantir.docker'
 
 ext {
     sharedDir = file("${project.rootDir}/shared")
-    sailfishVersion = '3.2.1736'
+    sailfishVersion = '3.3.11'
 }
 
 group = 'com.exactpro.th2'
@@ -26,21 +26,39 @@ sourceCompatibility = 11
 targetCompatibility = 11
 
 repositories {
-    maven {
-        name 'MavenLocal'
-        url sharedDir
-    }
-
-    mavenCentral()
+    // ignoreGradleMetadataRedirection is used for sonatype because
+    // Sailfish dependencies have constrains that interfere with our BOM
+    // so we exclude Gradle metadata for this repositories
 
     maven {
         name 'Sonatype_snapshots'
         url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+        metadataSources {
+            mavenPom()
+            artifact()
+            ignoreGradleMetadataRedirection()
+        }
     }
 
     maven {
         name 'Sonatype_releases'
         url 'https://s01.oss.sonatype.org/content/repositories/releases/'
+        metadataSources {
+            mavenPom()
+            artifact()
+            ignoreGradleMetadataRedirection()
+        }
+    }
+
+    mavenCentral {
+        metadataSources {
+            mavenPom()
+            artifact()
+        }
+    }
+    maven {
+        name 'MavenLocal'
+        url sharedDir
     }
 
     mavenLocal()
@@ -66,25 +84,20 @@ jar {
 }
 
 dependencies {
-    api platform('com.exactpro.th2:bom:3.1.0')
+    api platform('com.exactpro.th2:bom:4.0.2')
 
-    implementation 'com.exactpro.th2:common:3.35.0'
-    implementation 'com.exactpro.th2:codec:4.7.0'
-    implementation 'com.exactpro.th2:sailfish-utils:3.12.3'
+    implementation 'com.exactpro.th2:common:3.41.1'
+    implementation 'com.exactpro.th2:codec:4.7.4'
+    implementation 'com.exactpro.th2:sailfish-utils:3.13.0-dev-3204703314-SNAPSHOT'
 
-    implementation "com.exactpro.sf:sailfish-core:${sailfishVersion}"
     implementation "com.exactpro.sf:service-http:${sailfishVersion}"
-
-    implementation 'org.slf4j:slf4j-log4j12'
-    implementation 'org.slf4j:slf4j-api'
 
     implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib-jdk8', version: kotlin_version
     implementation group: 'org.jetbrains.kotlin', name: 'kotlin-reflect', version: kotlin_version
     implementation group: 'io.github.microutils', name: 'kotlin-logging', version: '2.0.10'
 
-    testImplementation "org.junit.jupiter:junit-jupiter:5.6.2"
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.0'
     testImplementation group: 'org.jetbrains.kotlin', name: 'kotlin-test-junit5', version: kotlin_version
-    testImplementation testFixtures('com.exactpro.th2:common:3.31.1')
 }
 
 test {
