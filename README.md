@@ -1,4 +1,4 @@
-# JSON Codec v0.6.1
+# JSON Codec v0.7.0
 
 This microservice can encode and decode JSON messages received via HTTP or any other transport
 
@@ -29,12 +29,12 @@ Main configuration is done via setting following properties in `codecSettings` b
     ]
   }
   ```
-  |JSON pointer|Result|
-  |:---|:---|
-  |/simple|42|
-  |/object/simple|54|
-  |/simple_collection/1|5|
-  |/object_collection/0/simple|test|
+| JSON pointer                | Result |
+|:----------------------------|:-------|
+| /simple                     | 42     |
+| /object/simple              | 54     |
+| /simple_collection/1        | 5      |
+| /object_collection/0/simple | test   |
 + **rejectUnexpectedFields** - messages with unknown fields will be rejected during decoding (`true` by default)
 + **treatSimpleValuesAsStrings** - allows decoding of primitive values from JSON string e.g. `"1"` can be decoded as number, `"true"` as boolean, etc (`false` by default)
 
@@ -74,7 +74,7 @@ metadata:
   name: codec-json
 spec:
   image-name: ghcr.io/th2-net/th2-codec-json
-  image-version: 0.6.1
+  image-version: 0.7.0
   custom-config:
     codecSettings:
       messageTypeDetection: BY_INNER_FIELD
@@ -141,6 +141,11 @@ spec:
 ```
 
 ## Changelog
+
+### v0.7.0
+
+* Kotlin updated to 1.6.21
+* Updated versions of common, BOM and sailfish.
 
 ### v0.6.1
 
