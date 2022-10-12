@@ -146,6 +146,7 @@ so we exclude Gradle metadata for these repositories.
 
 **Double check compatibility of dependencies.**
 This can also result to ignoring things like _testFixtures_ from dependencies.
+So to prevent this, there is special repository declarations for common library.
 
 ## Changelog
 

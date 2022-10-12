@@ -16,30 +16,9 @@
 
 package com.exactpro.th2.codec.json
 
-import com.exactpro.th2.common.grpc.Message
-import com.exactpro.th2.common.message.getString
-import com.exactpro.th2.common.message.messageType
 import java.io.InputStream
 import kotlin.test.fail
-import org.junit.jupiter.api.Assertions
 
 fun getResourceAsStream(path: String): InputStream {
     return String.Companion::class.java.classLoader.getResourceAsStream(path) ?: fail("Resource [$path] is required")
-}
-
-fun Message.assertString(name: String, expected: String? = null): String {
-    this.assertContains(name)
-    val actual = this.getString(name)!!
-    expected?.let {
-        Assertions.assertEquals(expected, actual) {"Unexpected $name field value"}
-    }
-    return actual
-}
-
-fun Message.assertContains(vararg name: String) {
-    name.forEach { fieldName ->
-        if (!this.containsFields(fieldName)) {
-            org.junit.jupiter.api.fail { "$messageType:$fieldName expected: not <null>" }
-        }
-    }
 }
