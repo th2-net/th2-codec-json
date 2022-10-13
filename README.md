@@ -141,12 +141,10 @@ spec:
 ```
 
 ### Gradle metadata note
-ignoreGradleMetadataRedirection is used for sonatype because Sailfish dependencies have constrains that interfere with our BOM,
-so we exclude Gradle metadata for these repositories.
+ignoreGradleMetadataRedirection is used for sonatype because Sailfish dependencies have constrains that interfere with BOM,
+so we exclude Gradle metadata for these repositories. 
 
-**Double check compatibility of dependencies.**
-This can also result to ignoring things like _testFixtures_ from dependencies.
-So to prevent this, there is special repository declarations for common library.
+It's been verified that Sailfish itself is compatible with versions from BOM and therefore safe to use.
 
 ## Changelog
 
@@ -155,7 +153,7 @@ So to prevent this, there is special repository declarations for common library.
 #### Changed:
 * Kotlin updated to 1.6.21
 * Updated versions of common, BOM and sailfish.
-* Added metadata ignoring behavior to gradle.
+* Added metadata ignoring behavior to gradle for sailfish dependencies.
 
 ### v0.6.1
 
