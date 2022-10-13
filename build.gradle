@@ -76,12 +76,7 @@ repositories {
             ignoreGradleMetadataRedirection()
         }
     }
-    mavenCentral {
-        metadataSources {
-            mavenPom()
-            artifact()
-        }
-    }
+    mavenCentral()
     mavenLocal()
 
     configurations.all {
