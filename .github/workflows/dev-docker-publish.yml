@@ -6,7 +6,6 @@ on:
       - master
       - version-*
 
-
 jobs:
   build-job:
     runs-on: ubuntu-20.04
