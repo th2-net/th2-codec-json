@@ -51,7 +51,7 @@ jobs:
     needs: [build]
     steps:
       - name: Show scanning target
-        run: echo ghcr.io/${{ github.repository }}:${{ build.outputs.version }}
+      - run: echo ghcr.io/${{ github.repository }}:${{ build.outputs.version }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
