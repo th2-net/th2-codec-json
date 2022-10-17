@@ -8,7 +8,7 @@ on:
 
 
 jobs:
-  build:
+  build-job:
     runs-on: ubuntu-20.04
     outputs:
       version: ${{ steps.release_ver.outputs.value }}
@@ -46,12 +46,12 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ steps.release_ver.outputs.value }}
           labels: com.exactpro.th2.${{ steps.meta.outputs.REPOSITORY_NAME }}=${{ steps.ver.outputs.value }}
-  trivy-scan:
+  trivy-scan-job:
     runs-on: ubuntu-20.04
-    needs: [build]
+    needs: [build-job]
     steps:
       - name: Show scanning target
-        run: echo ghcr.io/${{ github.repository }}:${{ needs.build.outputs.version }}
+        run: echo ghcr.io/${{ github.repository }}:${{ needs.build-job.outputs.version }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
