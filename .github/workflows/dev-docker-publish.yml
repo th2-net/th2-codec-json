@@ -47,7 +47,7 @@ jobs:
           tags: ghcr.io/${{ github.repository }}:${{ steps.release_ver.outputs.value }}
           labels: com.exactpro.th2.${{ steps.meta.outputs.REPOSITORY_NAME }}=${{ steps.ver.outputs.value }}
   trivy-scan-job:
-    uses: th2-net/.github/workflows/trivy-scan.yml@th2-4135-trivy-workflow
+    uses: th2-net/.github/.github/workflows/trivy-scan.yml@th2-4135-trivy-workflow
     needs: [build-job]
     with:
       image-path: ghcr.io/${{ github.repository }}:${{ needs.build-job.outputs.version }}
