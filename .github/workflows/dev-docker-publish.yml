@@ -12,7 +12,7 @@ jobs:
     uses: th2-net/.github/.github/workflows/dev-docker-publish.yml@th2-4135-trivy-workflow
     with:
       docker-username: ${{ github.repository_owner }}
-      docker-password: ${{ secrets.CR_PAT }}
+      CR_PAT: ${{ secrets.CR_PAT }}
   trivy-scan-job:
     uses: th2-net/.github/.github/workflows/trivy-scan.yml@th2-4135-trivy-workflow
     needs: [build-job]
