@@ -18,3 +18,4 @@ jobs:
     needs: [build-job]
     with:
       image-path: ghcr.io/${{ github.repository }}:${{ needs.build-job.outputs.version }}
+      vuln-type: 'library'
