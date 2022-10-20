@@ -12,3 +12,4 @@ jobs:
       docker-username: ${{ github.repository_owner }}
     secrets:
       CR_PAT: ${{ secrets.CR_PAT }}
+
