@@ -16,8 +16,8 @@ apply plugin: 'com.palantir.docker'
 
 ext {
     sharedDir = file("${project.rootDir}/shared")
-    sailfishVersion = '3.3.11'
-    commonVersion   = '3.41.1'
+    sailfishVersion = '3.3.49'
+    commonVersion   = '3.44.0'
 }
 
 group = 'com.exactpro.th2'
@@ -100,7 +100,7 @@ jar {
 }
 
 dependencies {
-    api platform('com.exactpro.th2:bom:4.0.2')
+    api platform('com.exactpro.th2:bom:4.1.0')
 
     implementation "com.exactpro.th2:common:${commonVersion}"
     implementation 'com.exactpro.th2:codec:4.7.4'
