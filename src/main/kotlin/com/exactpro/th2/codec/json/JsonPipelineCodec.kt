@@ -195,7 +195,6 @@ class JsonPipelineCodec(
                     putAllProperties(metadata.propertiesMap)
                     additionalMetadataProperties?.run(::putAllProperties)
                     this.id = metadata.id
-                    this.timestamp = metadata.timestamp
                     this.protocol = PROTOCOL
                 }
             }
@@ -257,7 +256,6 @@ class JsonPipelineCodec(
                 metadataBuilder.apply {
                     putAllProperties(metadataProperties)
                     this.id = messageId
-                    this.timestamp = metadata.timestamp
                     this.protocol = PROTOCOL
                 }
             }
