@@ -1,8 +1,8 @@
 plugins {
     id 'com.palantir.docker' version '0.25.0' apply false
     id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
-    id 'com.github.harbby.gradle.serviceloader' version '1.1.5'
     id "org.owasp.dependencycheck" version "7.2.0"
+    id 'org.jetbrains.kotlin.kapt' version "${kotlin_version}"
 }
 
 dependencyCheck {
@@ -117,6 +117,10 @@ dependencies {
     testImplementation group: 'org.jetbrains.kotlin', name: 'kotlin-test-junit5', version: kotlin_version
 
     testImplementation testFixtures("com.exactpro.th2:common:${commonVersion}")
+
+    compileOnly 'com.google.auto.service:auto-service:1.0.1'
+    annotationProcessor 'com.google.auto.service:auto-service:1.0.1'
+    kapt 'com.google.auto.service:auto-service:1.0.1'
 }
 
 test {
@@ -151,8 +155,4 @@ compileTestKotlin {
     kotlinOptions {
         jvmTarget = "11"
     }
-}
-
-serviceLoader {
-    serviceInterface 'com.exactpro.th2.codec.api.IPipelineCodecFactory'
 }

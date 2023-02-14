@@ -147,6 +147,11 @@ so we exclude Gradle metadata for these repositories.
 It's been verified that Sailfish itself is compatible with versions from BOM and therefore safe to use.
 
 ## Changelog
+### v0.8.0
+
+#### Changed:
+
+* Updated versions of common, BOM and sailfish.
 
 ### v2.0.0
 + books&pages support
