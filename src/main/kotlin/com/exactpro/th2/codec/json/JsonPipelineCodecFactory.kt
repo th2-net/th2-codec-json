@@ -22,9 +22,11 @@ import com.exactpro.sf.common.messages.structures.loaders.XmlDictionaryStructure
 import com.exactpro.th2.codec.api.IPipelineCodec
 import com.exactpro.th2.codec.api.IPipelineCodecFactory
 import com.exactpro.th2.codec.api.IPipelineCodecSettings
+import com.google.auto.service.AutoService
 import mu.KotlinLogging
 import java.io.InputStream
 
+@AutoService(IPipelineCodecFactory::class)
 @Suppress("unused")
 class JsonPipelineCodecFactory : IPipelineCodecFactory {
     private lateinit var dictionary: IDictionaryStructure
