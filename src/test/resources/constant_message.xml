@@ -5,6 +5,7 @@
             <field name="SimpleOne" type="java.lang.String"/>
             <field name="SimpleTwo" type="java.lang.String"/>
             <field name="SimpleThree" type="java.lang.String"/>
+            <field name="SimpleCollection" type="java.lang.String" isCollection="true"/>
         </message>
 
         <message id="M_Constant_Default" name="Constant_Default">
