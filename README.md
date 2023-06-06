@@ -1,4 +1,4 @@
-# JSON Codec v0.8.0
+# JSON Codec v0.9.0
 
 This microservice can encode and decode JSON messages received via HTTP or any other transport
 
@@ -147,6 +147,13 @@ so we exclude Gradle metadata for these repositories.
 It's been verified that Sailfish itself is compatible with versions from BOM and therefore safe to use.
 
 ## Changelog
+### v0.9.0
+
+#### Changed:
+* Updated sailfish from `3.3.54` to `3.3.106`
+  * Null json values encoding/decoding support.
+* OWASP vulnerability check added.
+
 ### v0.8.0
 
 #### Changed:
