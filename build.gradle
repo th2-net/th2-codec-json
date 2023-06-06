@@ -104,7 +104,7 @@ dependencies {
 
     implementation "com.exactpro.th2:common:${commonVersion}"
     implementation 'com.exactpro.th2:codec:4.7.5'
-    implementation 'com.exactpro.th2:sailfish-utils:3.15.0-TS-1468+'
+    implementation 'com.exactpro.th2:sailfish-utils:3.15.0'
 
     implementation "com.exactpro.sf:service-http:${sailfishVersion}"
 
