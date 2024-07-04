@@ -88,6 +88,10 @@ class ConstantMessageType {
             init(object : IPipelineCodecContext {
                 override fun get(alias: DictionaryAlias): InputStream = getResourceAsStream(alias)
 
+                @Deprecated(
+                    "Dictionary types will be removed in future releases of infra",
+                    replaceWith = ReplaceWith("get(alias)")
+                )
                 override fun get(type: DictionaryType): InputStream = TODO("Not yet implemented")
 
                 override fun getDictionaryAliases(): Set<String> = TODO("Not yet implemented")
