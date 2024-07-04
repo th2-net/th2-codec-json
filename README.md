@@ -1,4 +1,4 @@
-# JSON Codec v2.0.0
+# JSON Codec v2.1.0
 
 This microservice can encode and decode JSON messages received via HTTP or any other transport
 
@@ -68,74 +68,82 @@ If `messageTypeDetection` is set to `BY_HTTP_METHOD_AND_URI` these messages are 
 Here's an example of `infra-mgr` config required to deploy this service
 
 ```yaml
-apiVersion: th2.exactpro.com/v1
+apiVersion: th2.exactpro.com/v2
 kind: Th2Box
 metadata:
   name: codec-json
 spec:
-  image-name: ghcr.io/th2-net/th2-codec-json
-  image-version: 0.7.0
-  custom-config:
+  imageName: ghcr.io/th2-net/th2-codec-json
+  imageVersion: 0.7.0
+  customConfig:
+    transportLines:
+      "":
+        type: TH2_TRANSPORT
+        useParentEventId: true
+      general:
+        type: TH2_TRANSPORT
+        useParentEventId: false
     codecSettings:
       messageTypeDetection: BY_INNER_FIELD
       messageTypeField: "messageType"
       rejectUnexpectedFields: true
       treatSimpleValuesAsStrings: false
+      dictionaryAlias: ${dictionary_link:dictionary-name}
   type: th2-codec
   pins:
-    # encoder
-    - name: in_codec_encode
-      connection-type: mq
-      attributes:
-        - encoder_in
-        - subscribe
-        - group
-    - name: out_codec_encode
-      connection-type: mq
-      attributes:
-        - encoder_out
-        - publish
-        - group
-    # decoder
-    - name: in_codec_decode
-      connection-type: mq
-      attributes:
-        - decoder_in
-        - subscribe
-        - group
-    - name: out_codec_decode
-      connection-type: mq
-      attributes:
-        - decoder_out
-        - publish
-        - group
-    # encoder general (technical)
-    - name: in_codec_general_encode
-      connection-type: mq
-      attributes:
-        - general_encoder_in
-        - subscribe
-        - group
-    - name: out_codec_general_encode
-      connection-type: mq
-      attributes:
-        - general_encoder_out
-        - publish
-        - group
-    # decoder general (technical)
-    - name: in_codec_general_decode
-      connection-type: mq
-      attributes:
-        - general_decoder_in
-        - subscribe
-        - group
-    - name: out_codec_general_decode
-      connection-type: mq
-      attributes:
-        - general_decoder_out
-        - publish
-        - group
-  extended-settings:
+    mq:
+      subscribers:
+      # encoder
+      - name: in_codec_encode
+        connection-type: mq
+        attributes:
+          - encoder_in
+          - subscribe
+          - transport-group
+      - name: in_codec_decode
+        connection-type: mq
+        attributes:
+          - decoder_in
+          - subscribe
+          - transport-group
+      - name: in_codec_general_encode
+        connection-type: mq
+        attributes:
+          - general_encoder_in
+          - subscribe
+          - transport-group
+      - name: in_codec_general_decode
+        connection-type: mq
+        attributes:
+          - general_decoder_in
+          - subscribe
+          - transport-group
+      publishers:
+      - name: out_codec_encode
+        connection-type: mq
+        attributes:
+          - encoder_out
+          - publish
+          - transport-group
+      - name: out_codec_decode
+        connection-type: mq
+        attributes:
+          - decoder_out
+          - publish
+          - transport-group
+      - name: out_codec_general_encode
+        connection-type: mq
+        attributes:
+          - general_encoder_out
+          - publish
+          - transport-group
+      - name: out_codec_general_decode
+        connection-type: mq
+        attributes:
+          - general_decoder_out
+          - publish
+          - transport-group
+  extendedSettings:
     service:
       enabled: false
 ```
@@ -147,14 +155,19 @@ so we exclude Gradle metadata for these repositories.
 It's been verified that Sailfish itself is compatible with versions from BOM and therefore safe to use.
 
 ## Changelog
+
+### v2.1.0
+
++ Add support fot th2 transport
+
+### v2.0.0
++ books&pages support
+
 ### v0.8.0
 
 #### Changed:
 
 * Updated versions of common, BOM and sailfish.
-
-### v2.0.0
-+ books&pages support
 
 ### v0.7.0
 

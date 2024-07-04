@@ -31,6 +31,7 @@ import com.exactpro.sf.services.http.HTTPMessageHelper.REQUEST_URI_ATTRIBUTE
 import com.exactpro.sf.services.json.JSONDecoder
 import com.exactpro.sf.services.json.JSONEncoder
 import com.exactpro.th2.codec.api.IPipelineCodec
+import com.exactpro.th2.codec.api.IReportingContext
 import com.exactpro.th2.codec.json.JsonPipelineCodecFactory.Companion.PROTOCOL
 import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.BY_HTTP_METHOD_AND_URI
 import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.BY_INNER_FIELD
@@ -39,18 +40,26 @@ import com.exactpro.th2.codec.util.toDebugString
 import com.exactpro.th2.common.grpc.AnyMessage
 import com.exactpro.th2.common.grpc.Direction.FIRST
 import com.exactpro.th2.common.grpc.Direction.SECOND
-import com.exactpro.th2.common.grpc.MessageGroup
-import com.exactpro.th2.common.grpc.RawMessage
 import com.exactpro.th2.common.message.plusAssign
+import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.Direction
+import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.MessageGroup
+import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
+import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.RawMessage
+import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.toByteArray
 import com.exactpro.th2.sailfish.utils.IMessageToProtoConverter
+import com.exactpro.th2.sailfish.utils.MessageWrapper
 import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter
-import com.exactpro.th2.sailfish.utils.factory.MessageFactoryProxy
+import com.exactpro.th2.sailfish.utils.transport.IMessageToTransportConverter
+import com.exactpro.th2.sailfish.utils.transport.TransportToIMessageConverter
 import com.fasterxml.jackson.core.JsonPointer
 import com.fasterxml.jackson.core.JsonPointer.SEPARATOR
 import com.fasterxml.jackson.core.JsonPointer.empty
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.protobuf.ByteString
+import io.netty.buffer.Unpooled
 import io.netty.channel.embedded.EmbeddedChannel
+import com.exactpro.th2.common.grpc.MessageGroup as ProtoMessageGroup
+import com.exactpro.th2.common.grpc.RawMessage as ProtoRawMessage
 
 typealias MessageName = String
 typealias MessageType = String
@@ -61,6 +70,7 @@ class JsonPipelineCodec(
 ) : IPipelineCodec {
     private val messageFactory: IMessageFactory
     private val protoConverter: ProtoToIMessageConverter
+    private val transportConverter: TransportToIMessageConverter
     private val encodeChannel: EmbeddedChannel
     private val decodeChannel: EmbeddedChannel
     private val requestInfos: Map<MessageName, MessageInfo>
@@ -77,7 +87,9 @@ class JsonPipelineCodec(
         SailfishURI.parse(dictionary.namespace).let { uri ->
             this.messageFactory = JSONMessageFactory().apply { init(uri, dictionary) }
             this.protoConverter =
-                ProtoToIMessageConverter(MessageFactoryProxy(messageFactory, uri, dictionary), dictionary, uri)
+                ProtoToIMessageConverter(messageFactory, dictionary)
+            this.transportConverter =
+                TransportToIMessageConverter(messageFactory, dictionary)
         }
 
         val jsonSettings = this.settings.toJsonSettings()
@@ -140,10 +152,10 @@ class JsonPipelineCodec(
         this.messageNames = messageNames
     }
 
-    override fun encode(messageGroup: MessageGroup): MessageGroup {
+    override fun encode(messageGroup: ProtoMessageGroup, context: IReportingContext): ProtoMessageGroup {
         val messages = messageGroup.messagesList
 
-        val builder = MessageGroup.newBuilder()
+        val builder = ProtoMessageGroup.newBuilder()
 
         for (message in messages) {
             if (!message.hasMessage()) {
@@ -157,38 +169,10 @@ class JsonPipelineCodec(
 
             val parsedMessage = message.message
             val metadata = parsedMessage.metadata
-            val messageType = metadata.messageType
-            val messageStructure = checkNotNull(dictionary.messages[messageType]) { "Unknown message type: $messageType" }
-
-            if (settings.messageTypeDetection == BY_HTTP_METHOD_AND_URI) {
-                check(messageType in requestInfos || messageType in responseInfos) { "Message type is not a request or response: $messageType" }
-            }
-
             val sfMessage = protoConverter.fromProtoMessage(parsedMessage, true)
+            val (rawMessage, additionalMetadataProperties) = encodeMessage(sfMessage, metadata.messageType)
 
-            if (settings.messageTypeDetection == BY_INNER_FIELD) {
-                messagePathProvider.set(
-                    sfMessage,
-                    messageTypePointer,
-                    messageStructure,
-                    messageStructure.requireMessageType(),
-                    replaceIfExist = false
-                )
-            }
-
-            val encodedMessage = encodeChannel.encode(sfMessage)
-            val rawMessage = checkNotNull(encodedMessage.metaData.rawMessage) { "Encoded messages has no raw message in its metadata: $encodedMessage" }
-
-            val additionalMetadataProperties = when (this.settings.messageTypeDetection) {
-                BY_HTTP_METHOD_AND_URI -> requestInfos[messageType]?.run {
-                    val paramMessage: IMessage? = sfMessage[REQUEST_URI_MESSAGE]
-                    val paramValues: Map<String, Any?> = paramMessage?.run { fieldNames.associateWith(::get) } ?: mapOf()
-                    mapOf(METHOD_METADATA_PROPERTY to method, URI_METADATA_PROPERTY to uri.resolve(paramValues))
-                }
-                else -> null
-            }
-
-            builder += RawMessage.newBuilder().apply {
+            builder += ProtoRawMessage.newBuilder().apply {
                 body = ByteString.copyFrom(rawMessage)
                 parentEventId = parsedMessage.parentEventId
                 metadataBuilder.apply {
@@ -203,14 +187,87 @@ class JsonPipelineCodec(
         return builder.build()
     }
 
-    override fun decode(messageGroup: MessageGroup): MessageGroup {
+    override fun encode(messageGroup: MessageGroup, context: IReportingContext): MessageGroup {
+        val messages = messageGroup.messages
+
+        val builder = MessageGroup.builder()
+
+        for (message in messages) {
+            if (message !is ParsedMessage) {
+                builder.addMessage(message)
+                continue
+            }
+            if (message.run { protocol.isNotEmpty() && protocol != PROTOCOL }) {
+                builder.addMessage(message)
+                continue
+            }
+
+            val sfMessage = transportConverter.fromTransport(message.id.book, message.id.sessionGroup, message, useDictionary = true)
+            val (rawMessage, additionalMetadataProperties) = encodeMessage(sfMessage, message.type)
+
+            builder.addMessage(
+                RawMessage.builder()
+                    .setId(message.id)
+                    .setBody(Unpooled.wrappedBuffer(rawMessage))
+                    .setMetadata(message.metadata)
+                    .setProtocol(PROTOCOL)
+                    .apply {
+                        additionalMetadataProperties?.let {
+                            metadataBuilder().putAll(it)
+                        }
+                        message.eventId?.let { setEventId(it) }
+                    }.build()
+            )
+        }
+
+        return builder.build()
+    }
+
+    private fun encodeMessage(
+        sfMessage: MessageWrapper,
+        messageType: String
+    ): Pair<ByteArray, Map<String, String>?> {
+        val messageStructure = checkNotNull(dictionary.messages[messageType]) { "Unknown message type: $messageType" }
+
+        if (settings.messageTypeDetection == BY_HTTP_METHOD_AND_URI) {
+            check(messageType in requestInfos || messageType in responseInfos) { "Message type is not a request or response: $messageType" }
+        }
+
+
+        if (settings.messageTypeDetection == BY_INNER_FIELD) {
+            messagePathProvider.set(
+                sfMessage,
+                messageTypePointer,
+                messageStructure,
+                messageStructure.requireMessageType(),
+                replaceIfExist = false
+            )
+        }
+
+        val encodedMessage = encodeChannel.encode(sfMessage)
+        val rawMessage =
+            checkNotNull(encodedMessage.metaData.rawMessage) { "Encoded messages has no raw message in its metadata: $encodedMessage" }
+
+        val additionalMetadataProperties = when (this.settings.messageTypeDetection) {
+            BY_HTTP_METHOD_AND_URI -> requestInfos[messageType]?.run {
+                val paramMessage: IMessage? = sfMessage[REQUEST_URI_MESSAGE]
+                val paramValues: Map<String, Any?> = paramMessage?.run { fieldNames.associateWith(::get) } ?: mapOf()
+                mapOf(METHOD_METADATA_PROPERTY to method, URI_METADATA_PROPERTY to uri.resolve(paramValues))
+            }
+
+            else -> null
+        }
+        return Pair(rawMessage, additionalMetadataProperties)
+    }
+
+    override fun decode(messageGroup: ProtoMessageGroup, context: IReportingContext): ProtoMessageGroup {
         val messages = messageGroup.messagesList
 
         if (messages.isEmpty() || messages.none(AnyMessage::hasRawMessage)) {
             return messageGroup
         }
 
-        val builder = MessageGroup.newBuilder()
+        val builder = ProtoMessageGroup.newBuilder()
 
         for (message in messages) {
             if (!message.hasRawMessage()) {
@@ -251,7 +308,7 @@ class JsonPipelineCodec(
                 error("Message ${decodedMessage.name} was rejected due to: ${decodedMessage.metaData.rejectReason}")
             }
 
-            builder += IMESSAGE_CONVERTER.toProtoMessage(decodedMessage).apply {
+            builder += PROTO_IMESSAGE_CONVERTER.toProtoMessage(decodedMessage).apply {
                 parentEventId = rawMessage.parentEventId
                 metadataBuilder.apply {
                     putAllProperties(metadataProperties)
@@ -259,6 +316,66 @@ class JsonPipelineCodec(
                     this.protocol = PROTOCOL
                 }
             }
+        }
+
+        return builder.build()
+    }
+
+    override fun decode(messageGroup: MessageGroup, context: IReportingContext): MessageGroup {
+        val messages = messageGroup.messages
+
+        if (messages.isEmpty() || messages.none { it is RawMessage }) {
+            return messageGroup
+        }
+
+        val builder = MessageGroup.builder()
+
+        for (message in messages) {
+            if (message !is RawMessage) {
+                builder.addMessage(message)
+                continue
+            }
+
+            val metadataProperties = message.metadata
+            val body = message.body.toByteArray()
+            val messageId = message.id
+
+            val messageName = when (settings.messageTypeDetection) {
+                CONSTANT -> settings.constantMessageType
+                BY_INNER_FIELD -> {
+                    val json = OBJECT_READER.readTree(body)
+                    json.at(messageTypePointer).takeIf { it.isTextual }?.run { messageNames[textValue()] }
+                        ?: error("No valid type field $messageTypePointer in: $json")
+                }
+                BY_HTTP_METHOD_AND_URI -> {
+                    val method = requireNotNull(metadataProperties[METHOD_METADATA_PROPERTY]) { "Message has no '$METHOD_METADATA_PROPERTY' metadata property: $message" }
+                    val uri = requireNotNull(metadataProperties[URI_METADATA_PROPERTY]) { "Message has no '$URI_METADATA_PROPERTY' metadata property: $message" }
+
+                    when (messageId.direction) {
+                        Direction.INCOMING -> responseInfos.entries.find { it.value.matches(method, uri) } ?: error("No response for request with '$method' method and URI matching: $uri")
+                        Direction.OUTGOING -> requestInfos.entries.find { it.value.matches(method, uri) } ?: error("No request with '$method' method and URI matching: $uri")
+                    }.key
+                }
+            }
+
+            val decodedMessage = decodeChannel.decode(messageFactory.createMessage(messageName).apply {
+                metaData.rawMessage = body
+            })
+
+            if (decodedMessage.metaData.isRejected) {
+                error("Message ${decodedMessage.name} was rejected due to: ${decodedMessage.metaData.rejectReason}")
+            }
+
+            builder.addMessage(
+                TRANSPORT_IMESSAGE_CONVERTER
+                    .toTransportBuilder(decodedMessage)
+                    .apply {
+                        message.eventId?.let { setEventId(it) }
+                        metadataBuilder().putAll(metadataProperties)
+                        setId(messageId)
+                        setProtocol(PROTOCOL)
+                    }.build(),
+            )
         }
 
         return builder.build()
@@ -281,7 +398,8 @@ class JsonPipelineCodec(
         private const val URI_METADATA_PROPERTY = "uri"
 
         private val CODEC_SETTINGS = HTTPClientSettings()
-        private val IMESSAGE_CONVERTER = IMessageToProtoConverter()
+        private val PROTO_IMESSAGE_CONVERTER = IMessageToProtoConverter()
+        private val TRANSPORT_IMESSAGE_CONVERTER = IMessageToTransportConverter()
         private val VALID_MESSAGE_ATTRIBUTES = setOf(REQUEST_METHOD_ATTRIBUTE, REQUEST_URI_ATTRIBUTE, REQUEST_RESPONSE_ATTRIBUTE)
 
         private val OBJECT_READER = jacksonObjectMapper().reader()
