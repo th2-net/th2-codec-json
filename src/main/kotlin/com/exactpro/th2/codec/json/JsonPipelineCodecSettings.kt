@@ -17,6 +17,7 @@
 package com.exactpro.th2.codec.json
 
 import com.exactpro.sf.services.json.JsonSettings
+import com.exactpro.th2.codec.api.DictionaryAlias
 import com.exactpro.th2.codec.api.IPipelineCodecSettings
 import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.BY_HTTP_METHOD_AND_URI
 import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.BY_INNER_FIELD
@@ -27,7 +28,8 @@ data class JsonPipelineCodecSettings(
     val messageTypeField: String = "",
     val rejectUnexpectedFields: Boolean = true,
     val treatSimpleValuesAsStrings: Boolean = false,
-    val constantMessageType: String = ""
+    val constantMessageType: String = "",
+    val dictionaryAlias: DictionaryAlias = "",
 ) : IPipelineCodecSettings {
     init {
         when (messageTypeDetection) {
@@ -35,7 +37,7 @@ data class JsonPipelineCodecSettings(
             CONSTANT -> check(constantMessageType.isNotBlank()) { "${::messageTypeDetection.name} is $CONSTANT but ${::constantMessageType.name} is blank" }
             BY_HTTP_METHOD_AND_URI -> {}
         }
-
+        require(dictionaryAlias.isNotBlank()) { "dictionary alias cannot be blank" }
     }
 
     fun toJsonSettings(): JsonSettings = JsonSettings().apply {

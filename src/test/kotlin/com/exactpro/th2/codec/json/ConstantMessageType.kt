@@ -16,6 +16,9 @@
 
 package com.exactpro.th2.codec.json
 
+import com.exactpro.th2.codec.api.DictionaryAlias
+import com.exactpro.th2.codec.api.IPipelineCodecContext
+import com.exactpro.th2.codec.api.impl.ReportingContext
 import com.exactpro.th2.codec.json.JsonPipelineCodecSettings.MessageTypeDetection.CONSTANT
 import com.exactpro.th2.common.assertString
 import com.exactpro.th2.common.grpc.AnyMessage
@@ -24,11 +27,14 @@ import com.exactpro.th2.common.grpc.RawMessage
 import com.exactpro.th2.common.message.addField
 import com.exactpro.th2.common.message.message
 import com.exactpro.th2.common.message.messageType
+import com.exactpro.th2.common.schema.dictionary.DictionaryType
+import com.exactpro.th2.common.schema.grpc.router.GrpcRouter
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.google.protobuf.ByteString
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import java.io.InputStream
 
 class ConstantMessageType {
 
@@ -37,7 +43,7 @@ class ConstantMessageType {
         val json = """{"SimpleOne":"SimpleOne Value", "SimpleTwo":"SimpleTwo Value", "SimpleThree":"SimpleThree Value"}"""
         val rawMessage = RawMessage.newBuilder().setBody(ByteString.copyFrom(json.toByteArray())).build()
         val group = MessageGroup.newBuilder().addMessages(AnyMessage.newBuilder().setRawMessage(rawMessage)).build()
-        val decodeResult = codec.decode(group)
+        val decodeResult = codec.decode(group, ReportingContext())
         decodeResult.messagesList[0].message.apply {
             Assertions.assertEquals("Constant", messageType)
             assertString("SimpleOne", "SimpleOne Value")
@@ -54,7 +60,7 @@ class ConstantMessageType {
             addField("SimpleThree", "SimpleThree Value")
         }
         val group = MessageGroup.newBuilder().addMessages(AnyMessage.newBuilder().setMessage(message)).build()
-        val decodeResult = codec.encode(group)
+        val decodeResult = codec.encode(group, ReportingContext())
         decodeResult.messagesList[0].rawMessage.apply {
             val json = mapper.readTree(body.toStringUtf8()) as ObjectNode
             Assertions.assertEquals("SimpleOne Value", json.get("SimpleOne")?.asText())
@@ -67,7 +73,7 @@ class ConstantMessageType {
     fun `simple constant messageType test encode with default values`() {
         val message = message("Constant_Default")
         val group = MessageGroup.newBuilder().addMessages(AnyMessage.newBuilder().setMessage(message)).build()
-        val decodeResult = codec.encode(group)
+        val decodeResult = codec.encode(group, ReportingContext())
         decodeResult.messagesList[0].rawMessage.apply {
             val json = mapper.readTree(body.toStringUtf8()) as ObjectNode
             Assertions.assertEquals("test1", json.get("SimpleOne")?.asText())
@@ -79,8 +85,17 @@ class ConstantMessageType {
 
     companion object {
         val codec = JsonPipelineCodecFactory().apply {
-            init(getResourceAsStream("constant_message.xml"))
-        }.create(JsonPipelineCodecSettings(CONSTANT, constantMessageType = "Constant"))
+            init(object : IPipelineCodecContext {
+                override fun get(alias: DictionaryAlias): InputStream = getResourceAsStream(alias)
+
+                override fun get(type: DictionaryType): InputStream = TODO("Not yet implemented")
+
+                override fun getDictionaryAliases(): Set<String> = TODO("Not yet implemented")
+
+                override fun getGrpcRouter(): GrpcRouter = TODO("Not yet implemented")
+
+            })
+        }.create(JsonPipelineCodecSettings(CONSTANT, constantMessageType = "Constant", dictionaryAlias = "constant_message.xml"))
         val mapper = ObjectMapper()
     }
 }
